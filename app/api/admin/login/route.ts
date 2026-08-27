@@ -1,18 +1,17 @@
 import { cookies } from "next/headers";
-import { createAdminCookie } from "@/lib/admin-auth";
-import { runtime } from "@/lib/runtime";
-import { verifyAdminPassword } from "@/lib/admin-password";
+import { adminConfigured, createAdminCookie } from "@/lib/admin-auth";
+import { getAdminEmail, verifyAdminPassword } from "@/lib/admin-password";
 
 export async function POST(request: Request) {
-  const { ADMIN_EMAIL, ADMIN_PASSWORD, SESSION_SECRET } = runtime();
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !SESSION_SECRET) {
+  if (!(await adminConfigured())) {
     return Response.json({ error: "El acceso del fotógrafo todavía no está configurado." }, { status: 503 });
   }
 
   const payload = (await request.json().catch(() => null)) as { email?: string; password?: string } | null;
   const email = payload?.email?.trim().toLowerCase() ?? "";
   const password = payload?.password ?? "";
-  if (email !== ADMIN_EMAIL.toLowerCase() || !(await verifyAdminPassword(email, password))) {
+  const activeEmail = await getAdminEmail();
+  if (!activeEmail || email !== activeEmail || !(await verifyAdminPassword(email, password))) {
     return Response.json({ error: "Email o contraseña incorrectos." }, { status: 401 });
   }
 

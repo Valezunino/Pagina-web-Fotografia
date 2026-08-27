@@ -1,6 +1,5 @@
 import { isAdmin } from "@/lib/admin-auth";
-import { saveAdminPassword, verifyAdminPassword } from "@/lib/admin-password";
-import { runtime } from "@/lib/runtime";
+import { getAdminEmail, saveAdminPassword, verifyAdminPassword } from "@/lib/admin-password";
 
 export async function POST(request: Request) {
   if (!(await isAdmin())) return Response.json({ error: "No autorizado." }, { status: 401 });
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
   } | null;
   const currentPassword = payload?.currentPassword ?? "";
   const newPassword = payload?.newPassword ?? "";
-  const email = runtime().ADMIN_EMAIL?.toLowerCase();
+  const email = await getAdminEmail();
   if (!email) return Response.json({ error: "El administrador no está configurado." }, { status: 503 });
   if (newPassword.length < 10) {
     return Response.json({ error: "La contraseña nueva debe tener al menos 10 caracteres." }, { status: 400 });

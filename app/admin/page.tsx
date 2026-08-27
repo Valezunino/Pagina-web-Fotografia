@@ -6,6 +6,7 @@ import { AdminLogin } from "@/components/admin-login";
 import { adminConfigured, isAdmin } from "@/lib/admin-auth";
 import { getDb } from "@/db";
 import { albums, photos } from "@/db/schema";
+import { getAdminEmail } from "@/lib/admin-password";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,8 @@ export default async function AdminPage() {
     ? await getDb().select().from(albums).orderBy(asc(albums.sortOrder), desc(albums.createdAt)).catch(() => [])
     : [];
   const initialSettings = await getSiteSettings();
+  const initialAdminEmail = authenticated ? await getAdminEmail() ?? "" : "";
+  const configured = await adminConfigured();
 
   return (
     <main className="min-h-screen bg-[#0b0b0b] text-[#f2eee7]">
@@ -34,9 +37,14 @@ export default async function AdminPage() {
         </div>
       </header>
       {authenticated ? (
-        <AdminDashboard initialPhotos={initialPhotos} initialAlbums={initialAlbums} initialSettings={initialSettings} />
+        <AdminDashboard
+          initialPhotos={initialPhotos}
+          initialAlbums={initialAlbums}
+          initialSettings={initialSettings}
+          initialAdminEmail={initialAdminEmail}
+        />
       ) : (
-        <AdminLogin configured={adminConfigured()} />
+        <AdminLogin configured={configured} />
       )}
     </main>
   );

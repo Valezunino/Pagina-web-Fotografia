@@ -139,10 +139,12 @@ export function AdminDashboard({
   initialPhotos,
   initialAlbums,
   initialSettings,
+  initialAdminEmail,
 }: {
   initialPhotos: AdminPhoto[];
   initialAlbums: AdminAlbum[];
   initialSettings: EditableSiteSettings;
+  initialAdminEmail: string;
 }) {
   const uploadFormRef = useRef<HTMLFormElement>(null);
   const [photos, setPhotos] = useState<AdminPhoto[]>(initialPhotos);
@@ -152,6 +154,8 @@ export function AdminDashboard({
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [settingsMessage, setSettingsMessage] = useState("");
+  const [adminEmail, setAdminEmail] = useState(initialAdminEmail);
+  const [emailMessage, setEmailMessage] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [albumMessage, setAlbumMessage] = useState("");
   const selectedAlbum = albums.find((album) => album.id === selectedAlbumId);
@@ -381,6 +385,28 @@ export function AdminDashboard({
     if (response.ok) event.currentTarget.reset();
   }
 
+  async function changeEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailMessage("");
+    const form = new FormData(event.currentTarget);
+    const newEmail = String(form.get("newEmail") || "").trim().toLowerCase();
+    const currentPassword = String(form.get("currentPassword") || "");
+    const response = await fetch("/api/admin/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newEmail, currentPassword }),
+    });
+    const data = (await response.json()) as { email?: string; error?: string };
+    if (!response.ok || !data.email) {
+      setEmailMessage(data.error ?? "No pudimos cambiar el email.");
+      return;
+    }
+    setAdminEmail(data.email);
+    setEmailMessage("Email de acceso actualizado correctamente.");
+    const passwordInput = event.currentTarget.elements.namedItem("currentPassword") as HTMLInputElement | null;
+    if (passwordInput) passwordInput.value = "";
+  }
+
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.reload();
@@ -563,17 +589,30 @@ export function AdminDashboard({
         </TabsContent>
 
         <TabsContent value="security" className="pt-8">
-          <form onSubmit={changePassword} className="max-w-xl space-y-5 border border-white/10 bg-[#111] p-6 sm:p-8">
-            <div>
-              <h2 className="font-serif text-3xl">Cambiar contraseña</h2>
-              <p className="mt-2 text-sm leading-6 text-white/45">La nueva clave reemplaza a la anterior inmediatamente.</p>
-            </div>
-            <SettingField name="currentPassword" type="password" label="Contraseña actual" value="" />
-            <SettingField name="newPassword" type="password" label="Contraseña nueva" value="" />
-            <SettingField name="confirmation" type="password" label="Repetir contraseña nueva" value="" />
-            {passwordMessage ? <p className="text-xs text-[#d5bb90]">{passwordMessage}</p> : null}
-            <Button type="submit" className="h-11 bg-[#c6a56d] text-black hover:bg-[#d5bb90]"><KeyRound /> Actualizar contraseña</Button>
-          </form>
+          <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
+            <form onSubmit={changeEmail} className="space-y-5 border border-white/10 bg-[#111] p-6 sm:p-8">
+              <div>
+                <h2 className="font-serif text-3xl">Cambiar email</h2>
+                <p className="mt-2 text-sm leading-6 text-white/45">Correo actual: <span className="text-white/75">{adminEmail}</span></p>
+              </div>
+              <SettingField key={adminEmail} name="newEmail" type="email" label="Nuevo email de acceso" value={adminEmail} />
+              <SettingField name="currentPassword" type="password" label="Contraseña actual" value="" />
+              {emailMessage ? <p className="text-xs text-[#d5bb90]">{emailMessage}</p> : null}
+              <Button type="submit" className="h-11 bg-[#c6a56d] text-black hover:bg-[#d5bb90]"><Save /> Actualizar email</Button>
+            </form>
+
+            <form onSubmit={changePassword} className="space-y-5 border border-white/10 bg-[#111] p-6 sm:p-8">
+              <div>
+                <h2 className="font-serif text-3xl">Cambiar contraseña</h2>
+                <p className="mt-2 text-sm leading-6 text-white/45">La nueva clave reemplaza a la anterior inmediatamente.</p>
+              </div>
+              <SettingField name="currentPassword" type="password" label="Contraseña actual" value="" />
+              <SettingField name="newPassword" type="password" label="Contraseña nueva" value="" />
+              <SettingField name="confirmation" type="password" label="Repetir contraseña nueva" value="" />
+              {passwordMessage ? <p className="text-xs text-[#d5bb90]">{passwordMessage}</p> : null}
+              <Button type="submit" className="h-11 bg-[#c6a56d] text-black hover:bg-[#d5bb90]"><KeyRound /> Actualizar contraseña</Button>
+            </form>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

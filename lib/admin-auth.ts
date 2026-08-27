@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
+import { adminAccessConfigured, getAdminEmail } from "@/lib/admin-password";
 import { hmac, safeEqual } from "@/lib/security";
 import { runtime } from "@/lib/runtime";
 
 export const ADMIN_COOKIE = "gallery_admin";
 const MAX_AGE = 60 * 60 * 12;
 
-export function adminConfigured() {
-  const { ADMIN_EMAIL, ADMIN_PASSWORD, SESSION_SECRET } = runtime();
-  return Boolean(ADMIN_EMAIL && ADMIN_PASSWORD && SESSION_SECRET);
+export async function adminConfigured() {
+  return adminAccessConfigured();
 }
 
 export async function createAdminCookie(email: string) {
@@ -32,13 +32,14 @@ export async function createAdminCookie(email: string) {
 export async function isAdmin() {
   const store = await cookies();
   const token = store.get(ADMIN_COOKIE)?.value;
-  const { ADMIN_EMAIL, SESSION_SECRET } = runtime();
-  if (!token || !ADMIN_EMAIL || !SESSION_SECRET) return false;
+  const { SESSION_SECRET } = runtime();
+  const activeEmail = await getAdminEmail();
+  if (!token || !activeEmail || !SESSION_SECRET) return false;
 
   const [email, expiresValue, signature] = token.split("|");
   const expires = Number(expiresValue);
   if (!email || !expires || !signature || expires < Math.floor(Date.now() / 1000)) return false;
-  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return false;
+  if (email.toLowerCase() !== activeEmail) return false;
 
   const expected = await hmac(`${email}|${expiresValue}`, SESSION_SECRET);
   return safeEqual(signature, expected);
