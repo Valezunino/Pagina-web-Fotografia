@@ -801,7 +801,7 @@ function PhotoEditor({
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Eliminar “{photo.title}”?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Se borrarán la vista protegida y el original. Esta acción no se puede deshacer. Si la foto tiene una compra registrada, el sistema protegerá el archivo y te pedirá ocultarla.
+                  Se borrarán definitivamente la vista protegida, el archivo original y todas las compras asociadas. Quienes la hayan comprado perderán el acceso a la descarga. Esta acción no se puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
