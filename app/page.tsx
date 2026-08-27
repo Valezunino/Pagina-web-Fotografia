@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Camera, FolderOpen, LockKeyhole } from "lucide-react";
+import { ArrowDown, ArrowUpRight, FolderOpen, LockKeyhole } from "lucide-react";
+import { BrandHomeLink } from "@/components/brand-home-link";
 import { getPublishedAlbums } from "@/lib/album-data";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -12,14 +13,7 @@ export default async function Home() {
     <main className="min-h-screen overflow-hidden bg-[#0b0b0b] text-[#f2eee7]">
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#0b0b0b]/80 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <a href="#inicio" className="group flex items-center gap-3" aria-label="Ir al inicio">
-            <span className="grid size-8 place-items-center rounded-full border border-[#c6a56d]/60 text-[#c6a56d] transition-colors group-hover:bg-[#c6a56d] group-hover:text-black">
-              <Camera className="size-4" strokeWidth={1.5} />
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.28em]">
-              Daniel <span className="text-[#c6a56d]">/</span> Justiniano
-            </span>
-          </a>
+          <BrandHomeLink href="#inicio" />
           <nav className="flex items-center gap-5 text-xs text-white/60 sm:gap-8" aria-label="Navegación principal">
             <a href="#eventos" className="hidden transition-colors hover:text-white sm:block">Eventos</a>
             <a href="#compra" className="hidden transition-colors hover:text-white sm:block">Cómo comprar</a>

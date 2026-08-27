@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Camera, LockKeyhole } from "lucide-react";
+import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { BrandHomeLink } from "@/components/brand-home-link";
 import { BuyDialog } from "@/components/buy-dialog";
 import { getPublishedAlbum } from "@/lib/album-data";
 
@@ -31,10 +32,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
     <main className="min-h-screen bg-[#0b0b0b] text-[#f2eee7]">
       <header className="border-b border-white/10 bg-[#0b0b0b]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <Link href="/" className="group flex items-center gap-3" aria-label="Volver al inicio">
-            <span className="grid size-8 place-items-center rounded-full border border-[#c6a56d]/60 text-[#c6a56d] transition-colors group-hover:bg-[#c6a56d] group-hover:text-black"><Camera className="size-4" strokeWidth={1.5} /></span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.28em]">Daniel <span className="text-[#c6a56d]">/</span> Justiniano</span>
-          </Link>
+          <BrandHomeLink label="Volver al inicio" />
           <Link href="/admin" className="flex items-center gap-2 text-xs text-white/50 transition-colors hover:text-white"><LockKeyhole className="size-3.5" /> Fotógrafo</Link>
         </div>
       </header>
