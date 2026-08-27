@@ -50,19 +50,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const [photo] = await db.select().from(photos).where(eq(photos.id, id)).limit(1);
   if (!photo) return Response.json({ error: "Foto no encontrada." }, { status: 404 });
 
-  const [existingOrder] = await db
-    .select({ id: orders.id })
-    .from(orders)
-    .where(eq(orders.photoId, id))
-    .limit(1);
-  if (existingOrder) {
-    return Response.json(
-      { error: "Esta foto tiene compras registradas. Podés ocultarla, pero no eliminarla." },
-      { status: 409 },
-    );
-  }
-
-  await db.delete(photos).where(eq(photos.id, id));
+  await db.transaction(async (transaction) => {
+    await transaction.delete(orders).where(eq(orders.photoId, id));
+    await transaction.delete(photos).where(eq(photos.id, id));
+  });
   await Promise.all([
     deleteStoredAsset(photo.previewKey),
     deleteStoredAsset(photo.originalKey),
