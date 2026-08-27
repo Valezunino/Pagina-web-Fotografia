@@ -17,3 +17,7 @@ La identidad visual utiliza la portada oficial a color y protege las vistas púb
 1. Copiá .env.example como .env.local.
 2. Ejecutá npm run db:push.
 3. Ejecutá npm run dev.
+
+## Producción
+
+https://daniel-justiniano-vercel-listo.vercel.app
