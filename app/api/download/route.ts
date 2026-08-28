@@ -4,6 +4,15 @@ import { orders, photos } from "@/db/schema";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
 
+function safeDownloadName(filename: string) {
+  const fallback = filename
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(-120);
+  return fallback || "fotografia-original.jpg";
+}
+
 export async function GET(request: Request) {
   const orderId = new URL(request.url).searchParams.get("order") ?? "";
   if (!orderId) return new Response("Compra no encontrada", { status: 400 });
@@ -18,12 +27,14 @@ export async function GET(request: Request) {
     const asset = await readStoredAsset(row.originalKey);
     if (!asset || asset.statusCode === 304 || !asset.stream) return new Response("Archivo no encontrado", { status: 404 });
     await db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId));
+    const asciiName = safeDownloadName(row.originalName);
     return new Response(asset.stream, { headers: {
-      "content-type": row.contentType,
+      "content-type": "application/octet-stream",
       "content-length": String(asset.blob.size),
-      "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
+      "content-disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
       "cache-control": "private, no-store",
       "x-content-type-options": "nosniff",
+      "x-original-content-type": row.contentType,
     }});
   } catch {
     return new Response("La descarga no está disponible", { status: 503 });

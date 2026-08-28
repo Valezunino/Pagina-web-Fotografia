@@ -60,7 +60,7 @@ export function OrderStatus({ orderId, initialState }: { orderId: string; initia
       <div className="mt-8">
         {approved && purchase.downloadUrl ? (
           <Button asChild className="h-12 rounded-full bg-[#c6a56d] px-7 text-black hover:bg-[#d5bb90]">
-            <a href={purchase.downloadUrl}><Download /> Descargar sin marca de agua</a>
+            <a href={purchase.downloadUrl} download><Download /> Descargar sin marca de agua</a>
           </Button>
         ) : failed ? (
           <Button asChild variant="outline" className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10">
@@ -68,6 +68,11 @@ export function OrderStatus({ orderId, initialState }: { orderId: string; initia
           </Button>
         ) : null}
       </div>
+      {approved ? (
+        <p className="mt-4 text-[11px] leading-5 text-white/35">
+          En iPhone, el archivo se guarda en Archivos → Descargas.
+        </p>
+      ) : null}
     </div>
   );
 }

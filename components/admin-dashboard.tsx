@@ -66,21 +66,32 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Tu navegador no pudo preparar la vista protegida.");
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  context.fillStyle = "rgb(0 0 0 / 0.2)";
+  context.fillStyle = "rgb(0 0 0 / 0.08)";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.globalAlpha = 0.9;
+  context.globalAlpha = 0.72;
   context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(-Math.PI / 30);
+  context.rotate(-Math.PI / 18);
 
   if (logo) {
     const logoBitmap = await createImageBitmap(logo);
-    const targetWidth = Math.min(canvas.width * 0.8, 1180);
+    const targetWidth = Math.min(canvas.width * 0.52, 780);
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
-    context.shadowColor = "rgb(0 0 0 / 0.65)";
-    context.shadowBlur = Math.max(8, Math.round(canvas.width * 0.008));
-    context.shadowOffsetY = Math.max(1, Math.round(canvas.width * 0.0015));
-    context.drawImage(logoBitmap, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
+    const stepX = targetWidth * 0.82;
+    const stepY = targetHeight * 0.72;
+    const extent = Math.hypot(canvas.width, canvas.height);
+
+    for (let y = -extent; y <= extent; y += stepY) {
+      for (let x = -extent; x <= extent; x += stepX) {
+        context.drawImage(
+          logoBitmap,
+          x - targetWidth / 2,
+          y - targetHeight / 2,
+          targetWidth,
+          targetHeight,
+        );
+      }
+    }
     logoBitmap.close();
   } else {
     const size = Math.max(18, Math.round(canvas.width / 24));
@@ -488,7 +499,7 @@ export function AdminDashboard({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c6a56d]">Herramienta de marca de agua</p>
                 <h2 className="mt-3 font-serif text-3xl">Actualizar fotos ya publicadas</h2>
                 <p className="mt-2 text-sm leading-6 text-white/55">
-                  Elegí una carpeta y reemplazá las marcas repetidas por un único logo grande y centrado. Las fotos originales y las compras no se modifican.
+                  Elegí una carpeta y aplicá el patrón profesional de logos repetidos en diagonal. Las fotos originales y las compras no se modifican.
                 </p>
                 {watermarkMessage ? <p className="mt-3 flex items-start gap-2 text-sm text-[#e2c897]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {watermarkMessage}</p> : null}
               </div>
@@ -519,7 +530,7 @@ export function AdminDashboard({
                       <AlertDialogHeader>
                         <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Se regenerarán las vistas protegidas de esta carpeta con una sola marca de agua centrada. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
+                          Se regenerarán las vistas protegidas de esta carpeta con el patrón de marca de agua elegido. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -910,7 +921,7 @@ function PhotoEditor({
   return (
     <article className={`overflow-hidden border bg-[#111] ${photo.published ? "border-white/10" : "border-amber-300/20 opacity-75"}`}>
       <div className="relative aspect-[4/3] bg-black">
-        <img src={`/api/photos/${photo.id}/preview?wv=2`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={`/api/photos/${photo.id}/preview?wv=3`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] ${photo.published ? "bg-emerald-400/90 text-black" : "bg-amber-300 text-black"}`}>
           {photo.published ? "Visible" : "Oculta"}
         </span>
