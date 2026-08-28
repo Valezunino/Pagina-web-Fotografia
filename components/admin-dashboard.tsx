@@ -75,14 +75,16 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
 
   if (logo) {
     const logoBitmap = await createImageBitmap(logo);
-    const targetWidth = Math.min(canvas.width * 0.52, 780);
+    const targetWidth = Math.min(canvas.width * 0.46, 720);
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
-    const stepX = targetWidth * 0.82;
-    const stepY = targetHeight * 0.72;
-    const extent = Math.hypot(canvas.width, canvas.height);
+    const stepX = targetWidth * 0.86;
+    const stepY = targetHeight * 0.9;
 
-    for (let y = -extent; y <= extent; y += stepY) {
-      for (let x = -extent; x <= extent; x += stepX) {
+    for (let row = -4; row <= 4; row += 1) {
+      const offsetX = Math.abs(row) % 2 === 1 ? stepX / 2 : 0;
+      for (let column = -4; column <= 4; column += 1) {
+        const x = column * stepX + offsetX;
+        const y = row * stepY;
         context.drawImage(
           logoBitmap,
           x - targetWidth / 2,
@@ -921,7 +923,7 @@ function PhotoEditor({
   return (
     <article className={`overflow-hidden border bg-[#111] ${photo.published ? "border-white/10" : "border-amber-300/20 opacity-75"}`}>
       <div className="relative aspect-[4/3] bg-black">
-        <img src={`/api/photos/${photo.id}/preview?wv=3`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={`/api/photos/${photo.id}/preview?wv=4`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] ${photo.published ? "bg-emerald-400/90 text-black" : "bg-amber-300 text-black"}`}>
           {photo.published ? "Visible" : "Oculta"}
         </span>
