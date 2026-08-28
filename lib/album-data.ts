@@ -37,7 +37,7 @@ export async function getPublishedAlbums(): Promise<PublicAlbum[]> {
         title: album.title,
         description: album.description,
         photoCount: albumPhotos.length,
-        coverImage: `/api/photos/${albumPhotos[0].id}/preview?wv=5`,
+        coverImage: `/api/photos/${albumPhotos[0].id}/preview?wv=6`,
       }];
     });
   } catch {
@@ -72,9 +72,9 @@ export async function getPublishedAlbum(slug: string): Promise<{ album: PublicAl
         title: album.title,
         description: album.description,
         photoCount: rows.length,
-        coverImage: `/api/photos/${rows[0].id}/preview?wv=5`,
+        coverImage: `/api/photos/${rows[0].id}/preview?wv=6`,
       },
-      photos: rows.map((photo) => ({ ...photo, image: `/api/photos/${photo.id}/preview?wv=5` })),
+      photos: rows.map((photo) => ({ ...photo, image: `/api/photos/${photo.id}/preview?wv=6` })),
     };
   } catch {
     return null;
