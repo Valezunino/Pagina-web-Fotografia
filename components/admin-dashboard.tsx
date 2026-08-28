@@ -66,30 +66,21 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Tu navegador no pudo preparar la vista protegida.");
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  context.fillStyle = "rgb(0 0 0 / 0.26)";
+  context.fillStyle = "rgb(0 0 0 / 0.2)";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.globalAlpha = 0.96;
+  context.globalAlpha = 0.9;
   context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(-Math.PI / 18);
+  context.rotate(-Math.PI / 30);
 
   if (logo) {
     const logoBitmap = await createImageBitmap(logo);
-    const targetWidth = Math.min(canvas.width * 0.66, 1060);
+    const targetWidth = Math.min(canvas.width * 0.8, 1180);
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
     context.shadowColor = "rgb(0 0 0 / 0.65)";
     context.shadowBlur = Math.max(8, Math.round(canvas.width * 0.008));
     context.shadowOffsetY = Math.max(1, Math.round(canvas.width * 0.0015));
-    const marks = [
-      [-canvas.width * 0.36, -canvas.height * 0.34],
-      [canvas.width * 0.36, -canvas.height * 0.34],
-      [0, 0],
-      [-canvas.width * 0.36, canvas.height * 0.34],
-      [canvas.width * 0.36, canvas.height * 0.34],
-    ];
-    for (const [x, y] of marks) {
-      context.drawImage(logoBitmap, x - targetWidth / 2, y - targetHeight / 2, targetWidth, targetHeight);
-    }
+    context.drawImage(logoBitmap, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
     logoBitmap.close();
   } else {
     const size = Math.max(18, Math.round(canvas.width / 24));
@@ -153,6 +144,8 @@ export function AdminDashboard({
   const [settings, setSettings] = useState(initialSettings);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [watermarking, setWatermarking] = useState(false);
+  const [watermarkMessage, setWatermarkMessage] = useState("");
   const [settingsMessage, setSettingsMessage] = useState("");
   const [adminEmail, setAdminEmail] = useState(initialAdminEmail);
   const [emailMessage, setEmailMessage] = useState("");
@@ -306,6 +299,43 @@ export function AdminDashboard({
       setUploadMessage(reason instanceof Error ? reason.message : "No pudimos publicar las fotos.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function refreshWatermarks() {
+    if (!selectedPhotos.length || watermarking) return;
+    setWatermarking(true);
+    setWatermarkMessage("");
+    try {
+      const logoResponse = await fetch("/brand/daniel-fotografia-watermark.png");
+      if (!logoResponse.ok) throw new Error("No pudimos cargar el logo oficial.");
+      const logoBlob = await logoResponse.blob();
+      const logo = new File([logoBlob], "daniel-fotografia-watermark.png", { type: "image/png" });
+
+      for (let index = 0; index < selectedPhotos.length; index += 1) {
+        const photo = selectedPhotos[index];
+        setWatermarkMessage(`Actualizando ${index + 1} de ${selectedPhotos.length}…`);
+        const originalResponse = await fetch(`/api/admin/photos/${photo.id}/original`, { cache: "no-store" });
+        if (!originalResponse.ok) {
+          throw new Error(await apiError(originalResponse, `No pudimos preparar ${photo.title}.`));
+        }
+        const originalBlob = await originalResponse.blob();
+        const original = new File([originalBlob], `${photo.title}.jpg`, {
+          type: originalBlob.type || "image/jpeg",
+        });
+        const preview = await makePreview(original, logo, settings.watermarkText);
+        await upload(`previews/${photo.id}.jpg`, preview, {
+          access: "private",
+          handleUploadUrl: "/api/admin/uploads/blob",
+          clientPayload: JSON.stringify({ uploadId: photo.id, kind: "preview-replacement" }),
+          contentType: "image/jpeg",
+        });
+      }
+      setWatermarkMessage(`Marca de agua actualizada en ${selectedPhotos.length} ${selectedPhotos.length === 1 ? "foto" : "fotos"}.`);
+    } catch (reason) {
+      setWatermarkMessage(reason instanceof Error ? reason.message : "No pudimos actualizar las marcas de agua.");
+    } finally {
+      setWatermarking(false);
     }
   }
 
@@ -542,6 +572,32 @@ export function AdminDashboard({
                   <AdminStat value={visiblePhotos} label="Visibles" />
                   <AdminStat value={hiddenPhotos} label="Ocultas" />
                 </div>
+              </div>
+              <div className="mt-5 flex flex-col gap-3 border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/75">Marca de agua de la carpeta</p>
+                  <p className="mt-1 text-[11px] leading-5 text-white/40">Reemplaza las marcas repetidas por un único logo central. Los originales no se modifican.</p>
+                  {watermarkMessage ? <p className="mt-2 text-xs text-[#d5bb90]">{watermarkMessage}</p> : null}
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" disabled={!selectedPhotos.length || watermarking} className="shrink-0">
+                      {watermarking ? <><LoaderCircle className="animate-spin" /> Actualizando</> : <><ImagePlus /> Actualizar marca</>}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-white/10 bg-[#111] text-white">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Se regenerarán las vistas protegidas de esta carpeta con una sola marca de agua centrada. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={refreshWatermarks}>Actualizar vistas</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 {selectedPhotos.length ? selectedPhotos.map((photo, index) => (
@@ -809,7 +865,7 @@ function PhotoEditor({
   return (
     <article className={`overflow-hidden border bg-[#111] ${photo.published ? "border-white/10" : "border-amber-300/20 opacity-75"}`}>
       <div className="relative aspect-[4/3] bg-black">
-        <img src={`/api/photos/${photo.id}/preview`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={`/api/photos/${photo.id}/preview?wv=2`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] ${photo.published ? "bg-emerald-400/90 text-black" : "bg-amber-300 text-black"}`}>
           {photo.published ? "Visible" : "Oculta"}
         </span>

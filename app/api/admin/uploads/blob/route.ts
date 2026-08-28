@@ -13,14 +13,16 @@ export async function POST(request: Request) {
         if (!(await isAdmin())) throw new Error("No autorizado.");
         const payload = JSON.parse(clientPayload ?? "{}") as { uploadId?: string; kind?: string };
         if (!ID.test(payload.uploadId ?? "")) throw new Error("Carga inválida.");
-        const preview = payload.kind === "preview" && pathname === `previews/${payload.uploadId}.jpg`;
+        const initialPreview = payload.kind === "preview" && pathname === `previews/${payload.uploadId}.jpg`;
+        const replacementPreview = payload.kind === "preview-replacement" && pathname === `previews/${payload.uploadId}.jpg`;
+        const preview = initialPreview || replacementPreview;
         const original = payload.kind === "original" && pathname.startsWith(`originals/${payload.uploadId}/`);
         if (!preview && !original) throw new Error("Destino de carga inválido.");
         return {
           allowedContentTypes: preview ? ["image/jpeg"] : ["image/jpeg", "image/png", "image/webp"],
           maximumSizeInBytes: preview ? 4 * 1024 * 1024 : 25 * 1024 * 1024,
           addRandomSuffix: false,
-          allowOverwrite: false,
+          allowOverwrite: replacementPreview,
           tokenPayload: JSON.stringify(payload),
         };
       },
