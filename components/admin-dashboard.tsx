@@ -312,25 +312,44 @@ export function AdminDashboard({
       const logoBlob = await logoResponse.blob();
       const logo = new File([logoBlob], "daniel-fotografia-watermark.png", { type: "image/png" });
 
-      for (let index = 0; index < selectedPhotos.length; index += 1) {
-        const photo = selectedPhotos[index];
-        setWatermarkMessage(`Actualizando ${index + 1} de ${selectedPhotos.length}…`);
-        const originalResponse = await fetch(`/api/admin/photos/${photo.id}/original`, { cache: "no-store" });
-        if (!originalResponse.ok) {
-          throw new Error(await apiError(originalResponse, `No pudimos preparar ${photo.title}.`));
+      let nextPhotoIndex = 0;
+      let completedPhotos = 0;
+      let firstError: Error | null = null;
+
+      async function processNextPhoto() {
+        while (!firstError) {
+          const index = nextPhotoIndex;
+          nextPhotoIndex += 1;
+          if (index >= selectedPhotos.length) return;
+          const photo = selectedPhotos[index];
+
+          try {
+            const originalResponse = await fetch(`/api/admin/photos/${photo.id}/original`, { cache: "no-store" });
+            if (!originalResponse.ok) {
+              throw new Error(await apiError(originalResponse, `No pudimos preparar ${photo.title}.`));
+            }
+            const originalBlob = await originalResponse.blob();
+            const original = new File([originalBlob], `${photo.title}.jpg`, {
+              type: originalBlob.type || "image/jpeg",
+            });
+            const preview = await makePreview(original, logo, settings.watermarkText);
+            await upload(`previews/${photo.id}.jpg`, preview, {
+              access: "private",
+              handleUploadUrl: "/api/admin/uploads/blob",
+              clientPayload: JSON.stringify({ uploadId: photo.id, kind: "preview-replacement" }),
+              contentType: "image/jpeg",
+            });
+            completedPhotos += 1;
+            setWatermarkMessage(`Actualizando ${completedPhotos} de ${selectedPhotos.length}…`);
+          } catch (reason) {
+            firstError = reason instanceof Error ? reason : new Error(`No pudimos actualizar ${photo.title}.`);
+          }
         }
-        const originalBlob = await originalResponse.blob();
-        const original = new File([originalBlob], `${photo.title}.jpg`, {
-          type: originalBlob.type || "image/jpeg",
-        });
-        const preview = await makePreview(original, logo, settings.watermarkText);
-        await upload(`previews/${photo.id}.jpg`, preview, {
-          access: "private",
-          handleUploadUrl: "/api/admin/uploads/blob",
-          clientPayload: JSON.stringify({ uploadId: photo.id, kind: "preview-replacement" }),
-          contentType: "image/jpeg",
-        });
       }
+
+      const simultaneousPhotos = Math.min(3, selectedPhotos.length);
+      await Promise.all(Array.from({ length: simultaneousPhotos }, () => processNextPhoto()));
+      if (firstError) throw firstError;
       setWatermarkMessage(`Marca de agua actualizada en ${selectedPhotos.length} ${selectedPhotos.length === 1 ? "foto" : "fotos"}.`);
     } catch (reason) {
       setWatermarkMessage(reason instanceof Error ? reason.message : "No pudimos actualizar las marcas de agua.");
