@@ -463,6 +463,58 @@ export function AdminDashboard({
         </TabsList>
 
         <TabsContent value="photos" className="space-y-10 pt-8">
+          <section className="border border-[#c6a56d]/40 bg-[#c6a56d]/[0.07] p-6 sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c6a56d]">Herramienta de marca de agua</p>
+                <h2 className="mt-3 font-serif text-3xl">Actualizar fotos ya publicadas</h2>
+                <p className="mt-2 text-sm leading-6 text-white/55">
+                  Elegí una carpeta y reemplazá las marcas repetidas por un único logo grande y centrado. Las fotos originales y las compras no se modifican.
+                </p>
+                {watermarkMessage ? <p className="mt-3 flex items-start gap-2 text-sm text-[#e2c897]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {watermarkMessage}</p> : null}
+              </div>
+              <div className="grid w-full gap-3 sm:grid-cols-[minmax(220px,1fr)_auto] lg:w-auto">
+                <div className="space-y-2">
+                  <Label htmlFor="watermarkAlbumId" className="text-xs text-white/70">Carpeta que querés actualizar</Label>
+                  <NativeSelect
+                    id="watermarkAlbumId"
+                    value={selectedAlbumId}
+                    onChange={(event) => {
+                      setSelectedAlbumId(event.target.value);
+                      setWatermarkMessage("");
+                    }}
+                    className="h-12 min-w-64 border-[#c6a56d]/35 bg-[#15130f]"
+                  >
+                    {albums.map((album) => <NativeSelectOption key={album.id} value={album.id}>{album.title}</NativeSelectOption>)}
+                    {photos.some((photo) => !photo.albumId) ? <NativeSelectOption value="unassigned">Fotos sin carpeta</NativeSelectOption> : null}
+                  </NativeSelect>
+                </div>
+                <div className="flex items-end">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" disabled={!selectedPhotos.length || watermarking} className="h-12 w-full bg-[#c6a56d] px-6 font-semibold text-black hover:bg-[#d5bb90] sm:w-auto">
+                        {watermarking ? <><LoaderCircle className="animate-spin" /> Actualizando</> : <><ImagePlus /> Actualizar marca de agua</>}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border-white/10 bg-[#111] text-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Se regenerarán las vistas protegidas de esta carpeta con una sola marca de agua centrada. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={refreshWatermarks}>Sí, actualizar marcas</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </div>
+            {!selectedPhotos.length ? <p className="mt-4 text-xs text-white/40">La carpeta seleccionada todavía no tiene fotos para actualizar.</p> : null}
+          </section>
+
           <section className="border border-white/10 bg-[#111] p-6 sm:p-8">
             <div className="grid gap-8 xl:grid-cols-[0.7fr_1.3fr]">
               <div>
@@ -572,32 +624,6 @@ export function AdminDashboard({
                   <AdminStat value={visiblePhotos} label="Visibles" />
                   <AdminStat value={hiddenPhotos} label="Ocultas" />
                 </div>
-              </div>
-              <div className="mt-5 flex flex-col gap-3 border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-medium text-white/75">Marca de agua de la carpeta</p>
-                  <p className="mt-1 text-[11px] leading-5 text-white/40">Reemplaza las marcas repetidas por un único logo central. Los originales no se modifican.</p>
-                  {watermarkMessage ? <p className="mt-2 text-xs text-[#d5bb90]">{watermarkMessage}</p> : null}
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="outline" disabled={!selectedPhotos.length || watermarking} className="shrink-0">
-                      {watermarking ? <><LoaderCircle className="animate-spin" /> Actualizando</> : <><ImagePlus /> Actualizar marca</>}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="border-white/10 bg-[#111] text-white">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Se regenerarán las vistas protegidas de esta carpeta con una sola marca de agua centrada. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={refreshWatermarks}>Actualizar vistas</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </div>
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 {selectedPhotos.length ? selectedPhotos.map((photo, index) => (
