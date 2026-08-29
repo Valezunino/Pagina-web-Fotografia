@@ -70,7 +70,7 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   context.fillStyle = "rgb(0 0 0 / 0.18)";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.globalAlpha = 0.86;
+  context.globalAlpha = 0.94;
   context.translate(canvas.width / 2, canvas.height / 2);
   context.rotate(-Math.PI / 24);
 
