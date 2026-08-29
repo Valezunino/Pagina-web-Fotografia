@@ -78,8 +78,8 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
     const logoBitmap = await createImageBitmap(logo);
     const logoRatio = logoBitmap.height / logoBitmap.width;
     const targetWidth = Math.min(
-      canvas.width * 0.72,
-      (canvas.height * 0.72) / logoRatio,
+      canvas.width * 0.8,
+      (canvas.height * 0.8) / logoRatio,
     );
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
     context.drawImage(
