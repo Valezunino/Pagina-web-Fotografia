@@ -149,31 +149,6 @@ body {
   isolation: isolate;
 }
 
-.protected-photo::before,
-.protected-photo::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-}
-
-.protected-photo::before {
-  inset: 0;
-  z-index: 1;
-  background: rgb(0 0 0 / 0.26);
-}
-
-.protected-photo::after {
-  inset: -22%;
-  z-index: 2;
-  background-image: url("/brand/daniel-fotografia-watermark.png");
-  background-position: center;
-  background-repeat: repeat;
-  background-size: 40% auto;
-  opacity: 0.96;
-  filter: drop-shadow(0 3px 7px rgb(0 0 0 / 0.65));
-  transform: rotate(-10deg) scale(1.1);
-}
-
 .watermark span {
   transform: rotate(-16deg);
   border: 1px solid rgb(255 255 255 / 0.35);
