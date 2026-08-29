@@ -66,7 +66,7 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Tu navegador no pudo preparar la vista protegida.");
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  context.fillStyle = "rgb(0 0 0 / 0.08)";
+  context.fillStyle = "rgb(0 0 0 / 0.12)";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.save();
   context.globalAlpha = 0.62;
@@ -75,15 +75,14 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
 
   if (logo) {
     const logoBitmap = await createImageBitmap(logo);
-    const targetWidth = Math.min(canvas.width * 0.34, 560);
+    const targetWidth = Math.min(canvas.width * 0.24, 400);
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
-    const stepX = targetWidth * 1.08;
-    const stepY = targetHeight * 1.08;
+    const stepX = canvas.width * 0.34;
+    const stepY = canvas.height * 0.34;
 
-    for (let row = -4; row <= 4; row += 1) {
-      const offsetX = Math.abs(row) % 2 === 1 ? stepX / 2 : 0;
-      for (let column = -4; column <= 4; column += 1) {
-        const x = column * stepX + offsetX;
+    for (let row = -1; row <= 1; row += 1) {
+      for (let column = -1; column <= 1; column += 1) {
+        const x = column * stepX;
         const y = row * stepY;
         context.drawImage(
           logoBitmap,
@@ -923,7 +922,7 @@ function PhotoEditor({
   return (
     <article className={`overflow-hidden border bg-[#111] ${photo.published ? "border-white/10" : "border-amber-300/20 opacity-75"}`}>
       <div className="relative aspect-[4/3] bg-black">
-        <img src={`/api/photos/${photo.id}/preview?wv=6`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={`/api/photos/${photo.id}/preview?wv=7`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] ${photo.published ? "bg-emerald-400/90 text-black" : "bg-amber-300 text-black"}`}>
           {photo.published ? "Visible" : "Oculta"}
         </span>
