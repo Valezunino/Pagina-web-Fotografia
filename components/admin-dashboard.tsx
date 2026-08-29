@@ -340,12 +340,21 @@ export function AdminDashboard({
               type: originalBlob.type || "image/jpeg",
             });
             const preview = await makePreview(original, logo, settings.watermarkText);
-            await upload(`previews/${photo.id}.jpg`, preview, {
+            const replacementId = crypto.randomUUID();
+            const previewBlob = await upload(`previews/${photo.id}/${replacementId}.jpg`, preview, {
               access: "private",
               handleUploadUrl: "/api/admin/uploads/blob",
-              clientPayload: JSON.stringify({ uploadId: photo.id, kind: "preview-replacement" }),
+              clientPayload: JSON.stringify({ uploadId: photo.id, replacementId, kind: "preview-replacement" }),
               contentType: "image/jpeg",
             });
+            const replacementResponse = await fetch(`/api/admin/photos/${photo.id}/preview`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ previewKey: previewBlob.pathname }),
+            });
+            if (!replacementResponse.ok) {
+              throw new Error(await apiError(replacementResponse, `No pudimos actualizar ${photo.title}.`));
+            }
             completedPhotos += 1;
             setWatermarkMessage(`Actualizando ${completedPhotos} de ${selectedPhotos.length}…`);
           } catch (reason) {
@@ -495,7 +504,7 @@ export function AdminDashboard({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#c6a56d]">Herramienta de marca de agua</p>
                 <h2 className="mt-3 font-serif text-3xl">Actualizar fotos ya publicadas</h2>
                 <p className="mt-2 text-sm leading-6 text-white/55">
-                  Elegí una carpeta y aplicá el patrón profesional de logos repetidos en diagonal. Las fotos originales y las compras no se modifican.
+                  Elegí una carpeta y aplicá una sola marca central, amplia y profesional. Las fotos originales y las compras no se modifican.
                 </p>
                 {watermarkMessage ? <p className="mt-3 flex items-start gap-2 text-sm text-[#e2c897]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {watermarkMessage}</p> : null}
               </div>
@@ -526,7 +535,7 @@ export function AdminDashboard({
                       <AlertDialogHeader>
                         <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Se regenerarán las vistas protegidas de esta carpeta con el patrón de marca de agua elegido. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
+                          Se regenerarán las vistas protegidas de esta carpeta con una marca central, sin repeticiones ni superposiciones. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
