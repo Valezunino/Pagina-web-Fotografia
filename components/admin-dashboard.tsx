@@ -368,7 +368,7 @@ export function AdminDashboard({
         }
       }
 
-      const simultaneousPhotos = Math.min(3, selectedPhotos.length);
+      const simultaneousPhotos = Math.min(6, selectedPhotos.length);
       await Promise.all(Array.from({ length: simultaneousPhotos }, () => processNextPhoto()));
       if (firstError) throw firstError;
       await loadPhotos();
