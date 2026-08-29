@@ -43,6 +43,7 @@ type AdminPhoto = {
   title: string;
   category: string;
   priceCents: number;
+  previewKey: string;
   published: boolean;
   sortOrder: number;
 };
@@ -114,6 +115,10 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
 
 function nameFromFile(file: File) {
   return file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Fotografía";
+}
+
+function previewVersion(previewKey: string) {
+  return previewKey.split("/").at(-1)?.replace(/\.jpg$/i, "") || "initial";
 }
 
 async function apiError(response: Response, fallback: string) {
@@ -366,6 +371,7 @@ export function AdminDashboard({
       const simultaneousPhotos = Math.min(3, selectedPhotos.length);
       await Promise.all(Array.from({ length: simultaneousPhotos }, () => processNextPhoto()));
       if (firstError) throw firstError;
+      await loadPhotos();
       setWatermarkMessage(`Marca de agua actualizada en ${selectedPhotos.length} ${selectedPhotos.length === 1 ? "foto" : "fotos"}.`);
     } catch (reason) {
       setWatermarkMessage(reason instanceof Error ? reason.message : "No pudimos actualizar las marcas de agua.");
@@ -926,7 +932,7 @@ function PhotoEditor({
   return (
     <article className={`overflow-hidden border bg-[#111] ${photo.published ? "border-white/10" : "border-amber-300/20 opacity-75"}`}>
       <div className="relative aspect-[4/3] bg-black">
-        <img src={`/api/photos/${photo.id}/preview?wv=7`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={`/api/photos/${photo.id}/preview?pv=${previewVersion(photo.previewKey)}`} alt={photo.title} loading="lazy" className="h-full w-full object-cover" />
         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.15em] ${photo.published ? "bg-emerald-400/90 text-black" : "bg-amber-300 text-black"}`}>
           {photo.published ? "Visible" : "Oculta"}
         </span>
