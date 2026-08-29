@@ -66,33 +66,28 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Tu navegador no pudo preparar la vista protegida.");
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  context.fillStyle = "rgb(0 0 0 / 0.12)";
+  context.fillStyle = "rgb(0 0 0 / 0.18)";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.globalAlpha = 0.62;
+  context.globalAlpha = 0.56;
   context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(-Math.PI / 18);
+  context.rotate(-Math.PI / 24);
 
   if (logo) {
     const logoBitmap = await createImageBitmap(logo);
-    const targetWidth = Math.min(canvas.width * 0.24, 400);
+    const logoRatio = logoBitmap.height / logoBitmap.width;
+    const targetWidth = Math.min(
+      canvas.width * 0.72,
+      (canvas.height * 0.72) / logoRatio,
+    );
     const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
-    const stepX = canvas.width * 0.34;
-    const stepY = canvas.height * 0.34;
-
-    for (let row = -1; row <= 1; row += 1) {
-      for (let column = -1; column <= 1; column += 1) {
-        const x = column * stepX;
-        const y = row * stepY;
-        context.drawImage(
-          logoBitmap,
-          x - targetWidth / 2,
-          y - targetHeight / 2,
-          targetWidth,
-          targetHeight,
-        );
-      }
-    }
+    context.drawImage(
+      logoBitmap,
+      -targetWidth / 2,
+      -targetHeight / 2,
+      targetWidth,
+      targetHeight,
+    );
     logoBitmap.close();
   } else {
     const size = Math.max(18, Math.round(canvas.width / 24));
