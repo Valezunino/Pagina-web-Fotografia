@@ -12,6 +12,10 @@ export type PublicAlbum = {
   coverImage: string;
 };
 
+function previewVersion(previewKey: string) {
+  return previewKey.split("/").at(-1)?.replace(/\.jpg$/i, "") || "initial";
+}
+
 export async function getPublishedAlbums(): Promise<PublicAlbum[]> {
   try {
     const db = getDb();
@@ -23,7 +27,7 @@ export async function getPublishedAlbums(): Promise<PublicAlbum[]> {
 
     if (!albumRows.length) return [];
     const photoRows = await db
-      .select({ id: photos.id, albumId: photos.albumId })
+      .select({ id: photos.id, albumId: photos.albumId, previewKey: photos.previewKey })
       .from(photos)
       .where(and(inArray(photos.albumId, albumRows.map((album) => album.id)), eq(photos.published, true)))
       .orderBy(asc(photos.sortOrder), desc(photos.createdAt));
@@ -37,7 +41,7 @@ export async function getPublishedAlbums(): Promise<PublicAlbum[]> {
         title: album.title,
         description: album.description,
         photoCount: albumPhotos.length,
-        coverImage: `/api/photos/${albumPhotos[0].id}/preview?wv=8`,
+        coverImage: `/api/photos/${albumPhotos[0].id}/preview?pv=${previewVersion(albumPhotos[0].previewKey)}`,
       }];
     });
   } catch {
@@ -59,6 +63,7 @@ export async function getPublishedAlbum(slug: string): Promise<{ album: PublicAl
         title: photos.title,
         category: photos.category,
         priceCents: photos.priceCents,
+        previewKey: photos.previewKey,
       })
       .from(photos)
       .where(and(eq(photos.albumId, album.id), eq(photos.published, true)))
@@ -72,9 +77,12 @@ export async function getPublishedAlbum(slug: string): Promise<{ album: PublicAl
         title: album.title,
         description: album.description,
         photoCount: rows.length,
-        coverImage: `/api/photos/${rows[0].id}/preview?wv=8`,
+        coverImage: `/api/photos/${rows[0].id}/preview?pv=${previewVersion(rows[0].previewKey)}`,
       },
-      photos: rows.map((photo) => ({ ...photo, image: `/api/photos/${photo.id}/preview?wv=8` })),
+      photos: rows.map(({ previewKey, ...photo }) => ({
+        ...photo,
+        image: `/api/photos/${photo.id}/preview?pv=${previewVersion(previewKey)}`,
+      })),
     };
   } catch {
     return null;
