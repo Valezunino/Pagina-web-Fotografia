@@ -1,7 +1,11 @@
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
-import { reconcileMercadoPagoOrder, verifyMercadoPagoReturn } from "@/lib/mercado-pago";
+import {
+  reconcileMercadoPagoOrder,
+  verifyApprovedMercadoPagoOrder,
+  verifyMercadoPagoReturn,
+} from "@/lib/mercado-pago";
 import { verifyOrderAccessToken } from "@/lib/order-access";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
@@ -42,6 +46,17 @@ export async function GET(request: Request) {
         }
       } catch {
         // La descarga permanece protegida hasta poder validar el pago.
+      }
+    }
+    if (!authorized) {
+      try {
+        const approvedOrder = await verifyApprovedMercadoPagoOrder(orderId);
+        if (approvedOrder?.status === "approved") {
+          authorized = true;
+          status = approvedOrder.status;
+        }
+      } catch {
+        // Respaldo para compras anteriores abiertas desde otro navegador.
       }
     }
     if (!authorized) return new Response("No autorizado", { status: 403 });

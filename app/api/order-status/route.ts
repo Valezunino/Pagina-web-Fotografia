@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
-import { reconcileMercadoPagoOrder, verifyMercadoPagoReturn } from "@/lib/mercado-pago";
+import {
+  reconcileMercadoPagoOrder,
+  verifyApprovedMercadoPagoOrder,
+  verifyMercadoPagoReturn,
+} from "@/lib/mercado-pago";
 import { createOrderAccessToken, verifyOrderAccessToken } from "@/lib/order-access";
 import { verifyOrderCookie } from "@/lib/order-auth";
 
@@ -42,6 +46,18 @@ export async function GET(request: Request) {
         }
       } catch {
         // Si Mercado Pago demora, el cliente puede volver a verificar sin perder la compra.
+      }
+    }
+
+    if (!authorized) {
+      try {
+        const approvedOrder = await verifyApprovedMercadoPagoOrder(orderId);
+        if (approvedOrder?.status === "approved") {
+          authorized = true;
+          status = approvedOrder.status;
+        }
+      } catch {
+        // Respaldo para compras anteriores que volvieron sin cookie ni ID visible.
       }
     }
 

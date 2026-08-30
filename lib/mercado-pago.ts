@@ -153,6 +153,29 @@ export async function verifyMercadoPagoReturn(orderId: string, paymentId: string
   };
 }
 
+export async function verifyApprovedMercadoPagoOrder(orderId: string) {
+  const db = getDb();
+  const [order] = await db
+    .select({
+      id: orders.id,
+      amountCents: orders.amountCents,
+      status: orders.status,
+      paymentId: orders.paymentId,
+    })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+  if (!order) return null;
+
+  const payment = await findMercadoPagoPayment(order);
+  if (!payment || payment.status !== "approved" || !paymentMatchesOrder(payment, order)) return null;
+  const reconciled = await applyMercadoPagoPayment(payment);
+  return {
+    status: reconciled?.status ?? order.status,
+    paymentId: String(payment.id ?? order.paymentId ?? ""),
+  };
+}
+
 export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
   const orderId = payment.external_reference;
   if (!orderId) return null;
