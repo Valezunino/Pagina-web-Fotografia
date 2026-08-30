@@ -9,6 +9,7 @@ type PurchaseState = {
   status?: string;
   title?: string;
   downloadUrl?: string | null;
+  accessToken?: string;
   error?: string;
 };
 
@@ -16,12 +17,15 @@ export function OrderStatus({
   orderId,
   initialState,
   paymentId,
+  accessToken,
 }: {
   orderId: string;
   initialState: string;
   paymentId?: string;
+  accessToken?: string;
 }) {
   const [purchase, setPurchase] = useState<PurchaseState>({ status: initialState === "aprobado" ? "pending" : initialState });
+  const [verifiedAccess, setVerifiedAccess] = useState(accessToken ?? "");
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState(0);
 
@@ -31,12 +35,16 @@ export function OrderStatus({
     try {
       const query = new URLSearchParams({ order: orderId });
       if (paymentId) query.set("paymentId", paymentId);
+      if (verifiedAccess) query.set("access", verifiedAccess);
       const response = await fetch(`/api/order-status?${query.toString()}`, {
         cache: "no-store",
         credentials: "same-origin",
       });
       const data = (await response.json()) as PurchaseState;
-      if (response.ok) setPurchase(data);
+      if (response.ok) {
+        setPurchase(data);
+        if (data.accessToken) setVerifiedAccess(data.accessToken);
+      }
       else setPurchase((current) => ({ ...current, error: data.error ?? "No pudimos verificar el pago todavía." }));
     } catch {
       setPurchase((current) => ({ ...current, error: "La conexión demoró. Vamos a volver a verificar." }));
@@ -56,7 +64,7 @@ export function OrderStatus({
     };
     // El intervalo se reinicia solamente cuando cambia la compra o llega la aprobación.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, paymentId, purchase.status]);
+  }, [orderId, paymentId, verifiedAccess, purchase.status]);
 
   const approved = purchase.status === "approved";
   const failed = ["error", "rejected", "cancelled", "refunded", "charged_back", "creation_failed"].includes(purchase.status ?? "");

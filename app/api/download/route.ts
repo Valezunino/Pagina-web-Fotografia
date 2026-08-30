@@ -1,7 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
-import { reconcileMercadoPagoOrder } from "@/lib/mercado-pago";
+import { reconcileMercadoPagoOrder, verifyMercadoPagoReturn } from "@/lib/mercado-pago";
+import { verifyOrderAccessToken } from "@/lib/order-access";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
 
@@ -15,7 +16,10 @@ function safeDownloadName(filename: string) {
 }
 
 export async function GET(request: Request) {
-  const orderId = new URL(request.url).searchParams.get("order") ?? "";
+  const url = new URL(request.url);
+  const orderId = url.searchParams.get("order") ?? "";
+  const accessToken = url.searchParams.get("access") ?? undefined;
+  const paymentId = url.searchParams.get("paymentId") ?? undefined;
   if (!orderId) return new Response("Compra no encontrada", { status: 400 });
   try {
     const db = getDb();
@@ -23,11 +27,28 @@ export async function GET(request: Request) {
       status: orders.status, claimHash: orders.claimHash, originalKey: photos.originalKey,
       originalName: photos.originalName, contentType: photos.contentType,
     }).from(orders).innerJoin(photos, eq(photos.id, orders.photoId)).where(eq(orders.id, orderId)).limit(1);
-    if (!row || !(await verifyOrderCookie(orderId, row.claimHash))) return new Response("No autorizado", { status: 403 });
+    if (!row) return new Response("No autorizado", { status: 403 });
     let status = row.status;
+    let authorized =
+      (await verifyOrderCookie(orderId, row.claimHash)) ||
+      (await verifyOrderAccessToken(orderId, accessToken));
+
+    if (!authorized && paymentId) {
+      try {
+        const paymentReturn = await verifyMercadoPagoReturn(orderId, paymentId);
+        if (paymentReturn) {
+          authorized = true;
+          status = paymentReturn.status;
+        }
+      } catch {
+        // La descarga permanece protegida hasta poder validar el pago.
+      }
+    }
+    if (!authorized) return new Response("No autorizado", { status: 403 });
+
     if (status !== "approved") {
       try {
-        status = (await reconcileMercadoPagoOrder(orderId))?.status ?? status;
+        status = (await reconcileMercadoPagoOrder(orderId, paymentId))?.status ?? status;
       } catch {
         // La descarga sigue protegida; el cliente puede reintentar cuando Mercado Pago responda.
       }

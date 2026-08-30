@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { albums, orders, photos } from "@/db/schema";
+import { createOrderAccessToken } from "@/lib/order-access";
 import { setOrderCookie } from "@/lib/order-auth";
 import { requireRuntimeValue } from "@/lib/runtime";
 import { sha256 } from "@/lib/security";
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const accessToken = requireRuntimeValue("MERCADO_PAGO_ACCESS_TOKEN");
     const baseUrl = requireRuntimeValue("PUBLIC_BASE_URL").replace(/\/$/, "");
     const orderId = crypto.randomUUID();
+    const orderAccess = await createOrderAccessToken(orderId);
     const claimToken = `${crypto.randomUUID()}${crypto.randomUUID()}`;
     const claimHash = await sha256(claimToken);
 
@@ -69,9 +71,9 @@ export async function POST(request: Request) {
         external_reference: orderId,
         notification_url: `${baseUrl}/api/webhooks/mercadopago`,
         back_urls: {
-          success: `${baseUrl}/compra?estado=aprobado&order=${orderId}`,
-          pending: `${baseUrl}/compra?estado=pendiente&order=${orderId}`,
-          failure: `${baseUrl}/compra?estado=error&order=${orderId}`,
+          success: `${baseUrl}/compra?estado=aprobado&order=${orderId}&access=${orderAccess}`,
+          pending: `${baseUrl}/compra?estado=pendiente&order=${orderId}&access=${orderAccess}`,
+          failure: `${baseUrl}/compra?estado=error&order=${orderId}&access=${orderAccess}`,
         },
         auto_return: "approved",
       }),
