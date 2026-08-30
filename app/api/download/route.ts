@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
+import { reconcileMercadoPagoOrder } from "@/lib/mercado-pago";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
 
@@ -23,13 +24,25 @@ export async function GET(request: Request) {
       originalName: photos.originalName, contentType: photos.contentType,
     }).from(orders).innerJoin(photos, eq(photos.id, orders.photoId)).where(eq(orders.id, orderId)).limit(1);
     if (!row || !(await verifyOrderCookie(orderId, row.claimHash))) return new Response("No autorizado", { status: 403 });
-    if (row.status !== "approved") return new Response("El pago todavía no está aprobado", { status: 402 });
+    let status = row.status;
+    if (status !== "approved") {
+      try {
+        status = (await reconcileMercadoPagoOrder(orderId))?.status ?? status;
+      } catch {
+        // La descarga sigue protegida; el cliente puede reintentar cuando Mercado Pago responda.
+      }
+    }
+    if (status !== "approved") return new Response("El pago todavía no está aprobado", { status: 402 });
     const asset = await readStoredAsset(row.originalKey);
     if (!asset || asset.statusCode === 304 || !asset.stream) return new Response("Archivo no encontrado", { status: 404 });
-    await db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId));
+    try {
+      await db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId));
+    } catch {
+      // El contador es informativo y nunca debe impedir una descarga ya pagada.
+    }
     const asciiName = safeDownloadName(row.originalName);
     return new Response(asset.stream, { headers: {
-      "content-type": "application/octet-stream",
+      "content-type": row.contentType || asset.blob.contentType || "application/octet-stream",
       "content-length": String(asset.blob.size),
       "content-disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(row.originalName)}`,
       "cache-control": "private, no-store",

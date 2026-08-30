@@ -12,29 +12,54 @@ type PurchaseState = {
   error?: string;
 };
 
-export function OrderStatus({ orderId, initialState }: { orderId: string; initialState: string }) {
+export function OrderStatus({
+  orderId,
+  initialState,
+  paymentId,
+}: {
+  orderId: string;
+  initialState: string;
+  paymentId?: string;
+}) {
   const [purchase, setPurchase] = useState<PurchaseState>({ status: initialState === "aprobado" ? "pending" : initialState });
+  const [checking, setChecking] = useState(false);
+  const [checks, setChecks] = useState(0);
+
+  async function checkPayment() {
+    if (!orderId) return;
+    setChecking(true);
+    try {
+      const query = new URLSearchParams({ order: orderId });
+      if (paymentId) query.set("paymentId", paymentId);
+      const response = await fetch(`/api/order-status?${query.toString()}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const data = (await response.json()) as PurchaseState;
+      if (response.ok) setPurchase(data);
+      else setPurchase((current) => ({ ...current, error: data.error ?? "No pudimos verificar el pago todavía." }));
+    } catch {
+      setPurchase((current) => ({ ...current, error: "La conexión demoró. Vamos a volver a verificar." }));
+    } finally {
+      setChecking(false);
+      setChecks((current) => current + 1);
+    }
+  }
 
   useEffect(() => {
     if (!orderId || purchase.status === "approved") return;
-    let active = true;
-
-    async function check() {
-      const response = await fetch(`/api/order-status?order=${encodeURIComponent(orderId)}`, { cache: "no-store" });
-      const data = (await response.json()) as PurchaseState;
-      if (active) setPurchase(data);
-    }
-
-    void check();
-    const timer = window.setInterval(() => void check(), 2500);
+    const initialCheck = window.setTimeout(() => void checkPayment(), 0);
+    const timer = window.setInterval(() => void checkPayment(), 4000);
     return () => {
-      active = false;
+      window.clearTimeout(initialCheck);
       window.clearInterval(timer);
     };
-  }, [orderId, purchase.status]);
+    // El intervalo se reinicia solamente cuando cambia la compra o llega la aprobación.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, paymentId, purchase.status]);
 
   const approved = purchase.status === "approved";
-  const failed = ["error", "rejected", "cancelled", "refunded", "creation_failed"].includes(purchase.status ?? "");
+  const failed = ["error", "rejected", "cancelled", "refunded", "charged_back", "creation_failed"].includes(purchase.status ?? "");
 
   return (
     <div className="w-full max-w-xl border border-white/10 bg-[#111] p-7 text-center sm:p-10">
@@ -54,7 +79,9 @@ export function OrderStatus({ orderId, initialState }: { orderId: string; initia
           ? `${purchase.title ?? "La fotografía"} ya puede descargarse en su calidad original y sin marca de agua.`
           : failed
             ? "Podés volver a la galería e intentar nuevamente. No se habilitó ninguna descarga."
-            : "Mercado Pago puede demorar unos segundos en confirmar la operación. Esta pantalla se actualiza automáticamente."}
+            : checks > 5
+              ? "La confirmación está demorando más de lo habitual. Podés verificar nuevamente sin volver a pagar."
+              : "Mercado Pago puede demorar unos segundos en confirmar la operación. Esta pantalla se actualiza automáticamente."}
       </p>
       {purchase.error ? <p className="mt-5 text-xs text-red-300">{purchase.error}</p> : null}
       <div className="mt-8">
@@ -66,7 +93,18 @@ export function OrderStatus({ orderId, initialState }: { orderId: string; initia
           <Button asChild variant="outline" className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10">
             <Link href="/#eventos"><RotateCcw /> Volver a los eventos</Link>
           </Button>
-        ) : null}
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10"
+            disabled={checking}
+            onClick={() => void checkPayment()}
+          >
+            <RotateCcw className={checking ? "animate-spin" : ""} />
+            {checking ? "Verificando…" : "Verificar pago ahora"}
+          </Button>
+        )}
       </div>
       {approved ? (
         <p className="mt-4 text-[11px] leading-5 text-white/35">

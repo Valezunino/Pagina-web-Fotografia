@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
+import { reconcileMercadoPagoOrder } from "@/lib/mercado-pago";
 import { verifyOrderCookie } from "@/lib/order-auth";
 
 export async function GET(request: Request) {
-  const orderId = new URL(request.url).searchParams.get("order") ?? "";
+  const url = new URL(request.url);
+  const orderId = url.searchParams.get("order") ?? "";
+  const paymentId = url.searchParams.get("paymentId") ?? undefined;
   if (!orderId) return Response.json({ error: "Compra no encontrada." }, { status: 400 });
 
   try {
@@ -23,10 +26,19 @@ export async function GET(request: Request) {
       return Response.json({ error: "No pudimos verificar esta compra." }, { status: 403 });
     }
 
+    let status = row.status;
+    if (status !== "approved") {
+      try {
+        status = (await reconcileMercadoPagoOrder(orderId, paymentId))?.status ?? status;
+      } catch {
+        // Si Mercado Pago demora en responder, conservamos el estado y el cliente vuelve a consultar.
+      }
+    }
+
     return Response.json({
-      status: row.status,
+      status,
       title: row.title,
-      downloadUrl: row.status === "approved" ? `/api/download?order=${encodeURIComponent(orderId)}` : null,
+      downloadUrl: status === "approved" ? `/api/download?order=${encodeURIComponent(orderId)}` : null,
     });
   } catch {
     return Response.json({ error: "No pudimos consultar el pago." }, { status: 503 });
