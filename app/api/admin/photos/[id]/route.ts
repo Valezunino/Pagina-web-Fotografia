@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { albums, orders, photos } from "@/db/schema";
+import { albums, orderItems, orders, photos } from "@/db/schema";
 import { isAdmin } from "@/lib/admin-auth";
+import { ensureOrderItemsTable } from "@/lib/order-items";
 import { deleteStoredAsset } from "@/lib/stored-assets";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -50,6 +51,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const [photo] = await db.select().from(photos).where(eq(photos.id, id)).limit(1);
   if (!photo) return Response.json({ error: "Foto no encontrada." }, { status: 404 });
 
+  try {
+    await ensureOrderItemsTable();
+    await db.delete(orderItems).where(eq(orderItems.photoId, id));
+  } catch {
+    // La eliminación de una foto anterior al carrito no depende de esta tabla aditiva.
+  }
   await db.transaction(async (transaction) => {
     await transaction.delete(orders).where(eq(orders.photoId, id));
     await transaction.delete(photos).where(eq(photos.id, id));

@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Download, LoaderCircle, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { removeCartItems } from "@/lib/cart-store";
 
 type PurchaseState = {
   status?: string;
   title?: string;
+  itemCount?: number;
+  items?: Array<{ id: string; title: string; downloadUrl?: string }>;
   downloadUrl?: string | null;
   accessToken?: string;
   error?: string;
@@ -28,6 +31,7 @@ export function OrderStatus({
   const [verifiedAccess, setVerifiedAccess] = useState(accessToken ?? "");
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState(0);
+  const clearedCartForOrder = useRef("");
 
   async function checkPayment() {
     if (!orderId) return;
@@ -68,6 +72,14 @@ export function OrderStatus({
 
   const approved = purchase.status === "approved";
   const failed = ["error", "rejected", "cancelled", "refunded", "charged_back", "creation_failed"].includes(purchase.status ?? "");
+  const downloadItems = purchase.items?.filter((item) => item.downloadUrl) ?? [];
+  const itemCount = purchase.itemCount ?? Math.max(downloadItems.length, 1);
+
+  useEffect(() => {
+    if (!approved || !purchase.items?.length || clearedCartForOrder.current === orderId) return;
+    clearedCartForOrder.current = orderId;
+    removeCartItems(purchase.items.map((item) => item.id));
+  }, [approved, orderId, purchase.items]);
 
   return (
     <div className="w-full max-w-xl border border-white/10 bg-[#111] p-7 text-center sm:p-10">
@@ -80,11 +92,15 @@ export function OrderStatus({
         {approved ? "Pago aprobado" : failed ? "Pago no completado" : "Confirmando pago"}
       </p>
       <h1 className="mt-3 font-serif text-4xl">
-        {approved ? "Tu foto está lista." : failed ? "No se realizó la compra." : "Estamos preparando tu archivo."}
+        {approved
+          ? itemCount === 1 ? "Tu foto está lista." : "Tus fotos están listas."
+          : failed ? "No se realizó la compra." : "Estamos preparando tus archivos."}
       </h1>
       <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/48">
         {approved
-          ? `${purchase.title ?? "La fotografía"} ya puede descargarse en su calidad original y sin marca de agua.`
+          ? itemCount === 1
+            ? `${purchase.title ?? "La fotografía"} ya puede descargarse en su calidad original y sin marca de agua.`
+            : `Las ${itemCount} fotografías ya pueden descargarse en calidad original y sin marca de agua.`
           : failed
             ? "Podés volver a la galería e intentar nuevamente. No se habilitó ninguna descarga."
             : checks > 5
@@ -93,10 +109,17 @@ export function OrderStatus({
       </p>
       {purchase.error ? <p className="mt-5 text-xs text-red-300">{purchase.error}</p> : null}
       <div className="mt-8">
-        {approved && purchase.downloadUrl ? (
-          <Button asChild className="h-12 rounded-full bg-[#c6a56d] px-7 text-black hover:bg-[#d5bb90]">
-            <a href={purchase.downloadUrl} download><Download /> Descargar sin marca de agua</a>
-          </Button>
+        {approved && downloadItems.length ? (
+          <div className="mx-auto grid max-w-md gap-3 text-left">
+            {downloadItems.map((item, index) => (
+              <Button key={item.id} asChild className="h-auto min-h-12 justify-between rounded-xl bg-[#c6a56d] px-5 py-3 text-black hover:bg-[#d5bb90]">
+                <a href={item.downloadUrl} download>
+                  <span className="min-w-0 truncate">{downloadItems.length === 1 ? "Descargar sin marca de agua" : `${index + 1}. ${item.title}`}</span>
+                  <Download className="size-4" />
+                </a>
+              </Button>
+            ))}
+          </div>
         ) : failed ? (
           <Button asChild variant="outline" className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white hover:bg-white/10">
             <Link href="/#eventos"><RotateCcw /> Volver a los eventos</Link>
@@ -116,7 +139,7 @@ export function OrderStatus({
       </div>
       {approved ? (
         <p className="mt-4 text-[11px] leading-5 text-white/35">
-          En iPhone, el archivo se guarda en Archivos → Descargas.
+          {itemCount > 1 ? "Descargá cada archivo usando los botones. " : ""}En iPhone, se guardan en Archivos → Descargas.
         </p>
       ) : null}
     </div>

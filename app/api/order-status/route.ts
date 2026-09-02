@@ -7,6 +7,7 @@ import {
   verifyMercadoPagoReturn,
 } from "@/lib/mercado-pago";
 import { createOrderAccessToken, verifyOrderAccessToken } from "@/lib/order-access";
+import { getOrderItemsOrEmpty } from "@/lib/order-items";
 import { verifyOrderCookie } from "@/lib/order-auth";
 
 export async function GET(request: Request) {
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
         id: orders.id,
         status: orders.status,
         claimHash: orders.claimHash,
+        photoId: orders.photoId,
         title: photos.title,
       })
       .from(orders)
@@ -74,12 +76,21 @@ export async function GET(request: Request) {
     }
 
     const verifiedAccess = await createOrderAccessToken(orderId);
-    const downloadQuery = new URLSearchParams({ order: orderId, access: verifiedAccess });
+    const storedItems = await getOrderItemsOrEmpty(orderId);
+    const items = storedItems.length
+      ? storedItems.map((item) => ({ id: item.photoId, title: item.title }))
+      : [{ id: row.photoId, title: row.title }];
+    const downloads = items.map((item) => {
+      const downloadQuery = new URLSearchParams({ order: orderId, access: verifiedAccess, photo: item.id });
+      return { ...item, downloadUrl: `/api/download?${downloadQuery.toString()}` };
+    });
     return Response.json({
       status,
-      title: row.title,
+      title: items.length === 1 ? items[0].title : `${items.length} fotografías`,
+      itemCount: items.length,
+      items: status === "approved" ? downloads : items.map(({ id, title }) => ({ id, title })),
       accessToken: verifiedAccess,
-      downloadUrl: status === "approved" ? `/api/download?${downloadQuery.toString()}` : null,
+      downloadUrl: status === "approved" ? downloads[0]?.downloadUrl ?? null : null,
     });
   } catch {
     return Response.json({ error: "No pudimos consultar el pago." }, { status: 503 });

@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const albums = pgTable("albums", {
   id: text("id").primaryKey(),
@@ -59,4 +59,18 @@ export const orders = pgTable("orders", {
   index("orders_photo_idx").on(table.photoId),
   index("orders_payment_idx").on(table.paymentId),
   index("orders_email_created_idx").on(table.email, table.createdAt),
+]);
+
+export const orderItems = pgTable("order_items", {
+  orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  photoId: text("photo_id").notNull(),
+  title: text("title").notNull(),
+  priceCents: integer("price_cents").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  downloadCount: integer("download_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.orderId, table.photoId] }),
+  index("order_items_order_idx").on(table.orderId, table.sortOrder),
+  index("order_items_photo_idx").on(table.photoId),
 ]);

@@ -59,7 +59,7 @@ export default async function Home() {
               <h2 className="mt-4 font-serif text-4xl tracking-tight sm:text-5xl">{settings.galleryTitle}</h2>
             </div>
             <p className="hidden max-w-xs text-right text-sm leading-6 text-white/45 sm:block">
-              Elegí un evento para ver sus fotografías protegidas y comprar el original que quieras.
+              Elegí un evento, agregá tus fotos favoritas al carrito y pagalas todas juntas.
             </p>
           </div>
 
@@ -106,9 +106,9 @@ export default async function Home() {
           </div>
           <ol className="grid gap-px overflow-hidden border border-white/10 bg-white/10 sm:grid-cols-3">
             {[
-              ["01", "Elegí", "Seleccioná la foto que querés comprar."],
-              ["02", "Pagá", "Completá el pago seguro con Mercado Pago."],
-              ["03", "Descargá", "Recibí el original sin marca de agua."],
+              ["01", "Elegí", "Agregá al carrito todas las fotos que quieras."],
+              ["02", "Pagá juntas", "Hacé un único pago seguro con Mercado Pago."],
+              ["03", "Descargá", "Recibí cada original sin marca de agua."],
             ].map(([number, title, text]) => (
               <li key={number} className="bg-[#101010] p-6 sm:min-h-48">
                 <span className="font-serif text-3xl italic text-[#c6a56d]">{number}</span>

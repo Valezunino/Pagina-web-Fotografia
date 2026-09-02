@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CartExperience } from "@/components/cart-experience";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <CartExperience />
+      </body>
     </html>
   );
 }

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import { BrandHomeLink } from "@/components/brand-home-link";
-import { BuyDialog } from "@/components/buy-dialog";
 import { getPublishedAlbum } from "@/lib/album-data";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
                   <h2 className="mt-2 truncate font-serif text-2xl">{photo.title}</h2>
                   <p className="mt-2 text-sm text-white/55">{currency.format(photo.priceCents / 100)}</p>
                 </div>
-                <BuyDialog photo={{ id: photo.id, title: photo.title, price: photo.priceCents / 100 }} />
+                <AddToCartButton photo={{ id: photo.id, title: photo.title, price: photo.priceCents / 100, image: photo.image }} />
               </div>
             </article>
           ))}
