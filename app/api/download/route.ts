@@ -11,6 +11,9 @@ import { getOrderItemsOrEmpty } from "@/lib/order-items";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 function safeDownloadName(filename: string) {
   const fallback = filename
     .normalize("NFKD")
@@ -21,11 +24,14 @@ function safeDownloadName(filename: string) {
 }
 
 export async function GET(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("x-vercel-id") ?? "unknown";
   const url = new URL(request.url);
   const orderId = url.searchParams.get("order") ?? "";
   const accessToken = url.searchParams.get("access") ?? undefined;
   const paymentId = url.searchParams.get("paymentId") ?? undefined;
   const requestedPhotoId = url.searchParams.get("photo")?.trim() ?? "";
+  const openInline = url.searchParams.get("view") === "1";
   if (!orderId) return new Response("Compra no encontrada", { status: 400 });
   try {
     const db = getDb();
@@ -100,15 +106,35 @@ export async function GET(request: Request) {
       // El contador es informativo y nunca debe impedir una descarga ya pagada.
     }
     const asciiName = safeDownloadName(photo.originalName);
+    console.log(JSON.stringify({
+      level: "info",
+      message: "paid_download_started",
+      route: "/api/download",
+      requestId,
+      orderIdSuffix: orderId.slice(-8),
+      photoIdSuffix: photoId.slice(-8),
+      size: asset.blob.size,
+      disposition: openInline ? "inline" : "attachment",
+      durationMs: Date.now() - startedAt,
+    }));
     return new Response(asset.stream, { headers: {
       "content-type": photo.contentType || asset.blob.contentType || "application/octet-stream",
       "content-length": String(asset.blob.size),
-      "content-disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(photo.originalName)}`,
+      "content-disposition": `${openInline ? "inline" : "attachment"}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(photo.originalName)}`,
       "cache-control": "private, no-store",
       "x-content-type-options": "nosniff",
       "x-original-content-type": photo.contentType,
     }});
-  } catch {
+  } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      message: "paid_download_failed",
+      route: "/api/download",
+      requestId,
+      orderIdSuffix: orderId.slice(-8),
+      error: error instanceof Error ? error.message : String(error),
+      durationMs: Date.now() - startedAt,
+    }));
     return new Response("La descarga no está disponible", { status: 503 });
   }
 }

@@ -11,6 +11,8 @@ import { getOrderItemsOrEmpty } from "@/lib/order-items";
 import { verifyOrderCookie } from "@/lib/order-auth";
 
 export async function GET(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("x-vercel-id") ?? "unknown";
   const url = new URL(request.url);
   const orderId = url.searchParams.get("order") ?? "";
   const paymentId = url.searchParams.get("paymentId") ?? undefined;
@@ -35,15 +37,17 @@ export async function GET(request: Request) {
     }
 
     let status = row.status;
-    let authorized =
-      (await verifyOrderCookie(orderId, row.claimHash)) ||
-      (await verifyOrderAccessToken(orderId, accessToken));
+    let authorization = "none";
+    if (await verifyOrderCookie(orderId, row.claimHash)) authorization = "cookie";
+    else if (await verifyOrderAccessToken(orderId, accessToken)) authorization = "signed_access";
+    let authorized = authorization !== "none";
 
     if (!authorized && paymentId) {
       try {
         const paymentReturn = await verifyMercadoPagoReturn(orderId, paymentId);
         if (paymentReturn) {
           authorized = true;
+          authorization = "payment_id";
           status = paymentReturn.status;
         }
       } catch {
@@ -56,6 +60,7 @@ export async function GET(request: Request) {
         const approvedOrder = await verifyApprovedMercadoPagoOrder(orderId);
         if (approvedOrder?.status === "approved") {
           authorized = true;
+          authorization = "approved_payment_search";
           status = approvedOrder.status;
         }
       } catch {
@@ -82,8 +87,25 @@ export async function GET(request: Request) {
       : [{ id: row.photoId, title: row.title }];
     const downloads = items.map((item) => {
       const downloadQuery = new URLSearchParams({ order: orderId, access: verifiedAccess, photo: item.id });
-      return { ...item, downloadUrl: `/api/download?${downloadQuery.toString()}` };
+      const viewQuery = new URLSearchParams(downloadQuery);
+      viewQuery.set("view", "1");
+      return {
+        ...item,
+        downloadUrl: `/api/download?${downloadQuery.toString()}`,
+        viewUrl: `/api/download?${viewQuery.toString()}`,
+      };
     });
+    console.log(JSON.stringify({
+      level: "info",
+      message: "order_status_checked",
+      route: "/api/order-status",
+      requestId,
+      orderIdSuffix: orderId.slice(-8),
+      authorization,
+      status,
+      itemCount: items.length,
+      durationMs: Date.now() - startedAt,
+    }));
     return Response.json({
       status,
       title: items.length === 1 ? items[0].title : `${items.length} fotografías`,
@@ -91,8 +113,17 @@ export async function GET(request: Request) {
       items: status === "approved" ? downloads : items.map(({ id, title }) => ({ id, title })),
       accessToken: verifiedAccess,
       downloadUrl: status === "approved" ? downloads[0]?.downloadUrl ?? null : null,
-    });
-  } catch {
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      message: "order_status_failed",
+      route: "/api/order-status",
+      requestId,
+      orderIdSuffix: orderId.slice(-8),
+      error: error instanceof Error ? error.message : String(error),
+      durationMs: Date.now() - startedAt,
+    }));
     return Response.json({ error: "No pudimos consultar el pago." }, { status: 503 });
   }
 }

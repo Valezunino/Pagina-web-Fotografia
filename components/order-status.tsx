@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Download, LoaderCircle, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ type PurchaseState = {
   status?: string;
   title?: string;
   itemCount?: number;
-  items?: Array<{ id: string; title: string; downloadUrl?: string }>;
+  items?: Array<{ id: string; title: string; downloadUrl?: string; viewUrl?: string }>;
   downloadUrl?: string | null;
   accessToken?: string;
   error?: string;
@@ -32,10 +32,14 @@ export function OrderStatus({
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState(0);
   const clearedCartForOrder = useRef("");
+  const requestInFlight = useRef(false);
 
-  async function checkPayment() {
-    if (!orderId) return;
+  const checkPayment = useCallback(async () => {
+    if (!orderId || requestInFlight.current) return;
+    requestInFlight.current = true;
     setChecking(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
     try {
       const query = new URLSearchParams({ order: orderId });
       if (paymentId) query.set("paymentId", paymentId);
@@ -43,6 +47,7 @@ export function OrderStatus({
       const response = await fetch(`/api/order-status?${query.toString()}`, {
         cache: "no-store",
         credentials: "same-origin",
+        signal: controller.signal,
       });
       const data = (await response.json()) as PurchaseState;
       if (response.ok) {
@@ -53,22 +58,29 @@ export function OrderStatus({
     } catch {
       setPurchase((current) => ({ ...current, error: "La conexión demoró. Vamos a volver a verificar." }));
     } finally {
+      window.clearTimeout(timeout);
+      requestInFlight.current = false;
       setChecking(false);
       setChecks((current) => current + 1);
     }
-  }
+  }, [orderId, paymentId, verifiedAccess]);
 
   useEffect(() => {
     if (!orderId || purchase.status === "approved") return;
-    const initialCheck = window.setTimeout(() => void checkPayment(), 0);
-    const timer = window.setInterval(() => void checkPayment(), 4000);
-    return () => {
-      window.clearTimeout(initialCheck);
-      window.clearInterval(timer);
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const run = async () => {
+      await checkPayment();
+      if (!cancelled) timer = window.setTimeout(() => void run(), 5000);
     };
-    // El intervalo se reinicia solamente cuando cambia la compra o llega la aprobación.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, paymentId, verifiedAccess, purchase.status]);
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [checkPayment, orderId, purchase.status]);
 
   const approved = purchase.status === "approved";
   const failed = ["error", "rejected", "cancelled", "refunded", "charged_back", "creation_failed"].includes(purchase.status ?? "");
@@ -112,12 +124,24 @@ export function OrderStatus({
         {approved && downloadItems.length ? (
           <div className="mx-auto grid max-w-md gap-3 text-left">
             {downloadItems.map((item, index) => (
-              <Button key={item.id} asChild className="h-auto min-h-12 justify-between rounded-xl bg-[#c6a56d] px-5 py-3 text-black hover:bg-[#d5bb90]">
-                <a href={item.downloadUrl} download>
-                  <span className="min-w-0 truncate">{downloadItems.length === 1 ? "Descargar sin marca de agua" : `${index + 1}. ${item.title}`}</span>
-                  <Download className="size-4" />
-                </a>
-              </Button>
+              <div key={item.id} className="grid gap-1.5">
+                <Button asChild className="h-auto min-h-12 justify-between rounded-xl bg-[#c6a56d] px-5 py-3 text-black hover:bg-[#d5bb90]">
+                  <a href={item.downloadUrl} download>
+                    <span className="min-w-0 truncate">{downloadItems.length === 1 ? "Descargar sin marca de agua" : `${index + 1}. ${item.title}`}</span>
+                    <Download className="size-4" />
+                  </a>
+                </Button>
+                {item.viewUrl ? (
+                  <a
+                    className="justify-self-center text-[11px] text-white/48 underline decoration-white/20 underline-offset-4 hover:text-white/75"
+                    href={item.viewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Si no se descarga, abrir archivo
+                  </a>
+                ) : null}
+              </div>
             ))}
           </div>
         ) : failed ? (

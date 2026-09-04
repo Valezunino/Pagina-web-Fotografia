@@ -24,6 +24,16 @@ type PaymentSearchResponse = {
 
 const FAILED_PAYMENT_STATUSES = new Set(["rejected", "cancelled", "refunded", "charged_back"]);
 
+export class MercadoPagoApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "MercadoPagoApiError";
+  }
+}
+
 function paymentMatchesOrder(payment: MercadoPagoPayment, order: OrderPaymentTarget) {
   return (
     payment.external_reference === order.id &&
@@ -44,7 +54,7 @@ async function mercadoPagoRequest<T>(url: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Mercado Pago respondió ${response.status}.`);
+    throw new MercadoPagoApiError(`Mercado Pago respondió ${response.status}.`, response.status);
   }
 
   return (await response.json()) as T;
@@ -65,6 +75,8 @@ async function findMercadoPagoPayment(order: OrderPaymentTarget) {
     range: "date_created",
     begin_date: "NOW-364DAYS",
     end_date: "NOW",
+    limit: "50",
+    offset: "0",
   });
   const search = await mercadoPagoRequest<PaymentSearchResponse>(
     `https://api.mercadopago.com/v1/payments/search?${query.toString()}`,
