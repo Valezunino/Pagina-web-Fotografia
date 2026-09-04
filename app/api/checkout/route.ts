@@ -2,15 +2,21 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { albums, orderItems, orders, photos } from "@/db/schema";
 import { createOrderAccessToken } from "@/lib/order-access";
-import { ensureOrderItemsTable } from "@/lib/order-items";
 import { setOrderCookie } from "@/lib/order-auth";
 import { requireRuntimeValue } from "@/lib/runtime";
 import { sha256 } from "@/lib/security";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_CART_ITEMS = 100;
+const MERCADO_PAGO_TIMEOUT_MS = 12_000;
+
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const requestId = request.headers.get("x-vercel-id") ?? "unknown";
+  let createdOrderId = "";
+  let itemCount = 0;
   try {
     const payload = (await request.json()) as { photoId?: string; photoIds?: unknown; email?: string };
     const requestedIds = Array.isArray(payload.photoIds)
@@ -31,7 +37,6 @@ export async function POST(request: Request) {
     }
 
     const db = getDb();
-    await ensureOrderItemsTable();
     const availableRows = await db
       .select({
         id: photos.id,
@@ -58,6 +63,8 @@ export async function POST(request: Request) {
     const accessToken = requireRuntimeValue("MERCADO_PAGO_ACCESS_TOKEN");
     const baseUrl = requireRuntimeValue("PUBLIC_BASE_URL").replace(/\/$/, "");
     const orderId = crypto.randomUUID();
+    createdOrderId = orderId;
+    itemCount = selectedPhotos.length;
     const orderAccess = await createOrderAccessToken(orderId);
     const claimToken = `${crypto.randomUUID()}${crypto.randomUUID()}`;
     const claimHash = await sha256(claimToken);
@@ -109,9 +116,10 @@ export async function POST(request: Request) {
         },
         auto_return: "approved",
       }),
+      signal: AbortSignal.timeout(MERCADO_PAGO_TIMEOUT_MS),
     });
 
-    const preference = (await preferenceResponse.json()) as {
+    const preference = (await preferenceResponse.json().catch(() => ({}))) as {
       id?: string;
       init_point?: string;
       sandbox_init_point?: string;
@@ -125,9 +133,44 @@ export async function POST(request: Request) {
 
     await db.update(orders).set({ preferenceId: preference.id }).where(eq(orders.id, orderId));
     await setOrderCookie(orderId, claimToken);
+    console.log(JSON.stringify({
+      level: "info",
+      message: "checkout_created",
+      route: "/api/checkout",
+      requestId,
+      orderIdSuffix: orderId.slice(-8),
+      itemCount,
+      durationMs: Date.now() - startedAt,
+    }));
     return Response.json({ checkoutUrl, itemCount: selectedPhotos.length });
   } catch (error) {
+    if (createdOrderId) {
+      try {
+        await getDb()
+          .update(orders)
+          .set({ status: "creation_failed" })
+          .where(and(eq(orders.id, createdOrderId), eq(orders.status, "pending")));
+      } catch {
+        // El error original es el que debe informarse y registrarse.
+      }
+    }
     const message = error instanceof Error ? error.message : "No pudimos iniciar el pago.";
-    return Response.json({ error: message }, { status: 500 });
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    console.error(JSON.stringify({
+      level: "error",
+      message: "checkout_failed",
+      route: "/api/checkout",
+      requestId,
+      orderIdSuffix: createdOrderId.slice(-8),
+      itemCount,
+      error: message,
+      timedOut,
+      durationMs: Date.now() - startedAt,
+    }));
+    return Response.json({
+      error: timedOut
+        ? "Mercado Pago demoró demasiado. Intentá nuevamente; no se realizó ningún cobro."
+        : message,
+    }, { status: 503 });
   }
 }

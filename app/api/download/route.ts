@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import { after } from "next/server";
 import { getDb } from "@/db";
 import { orderItems, orders, photos } from "@/db/schema";
 import {
@@ -93,18 +94,20 @@ export async function GET(request: Request) {
 
     const asset = await readStoredAsset(photo.originalKey);
     if (!asset || asset.statusCode === 304 || !asset.stream) return new Response("Archivo no encontrado", { status: 404 });
-    try {
-      await Promise.all([
-        db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId)),
-        storedItems.length
-          ? db.update(orderItems)
-              .set({ downloadCount: sql`${orderItems.downloadCount} + 1` })
-              .where(and(eq(orderItems.orderId, orderId), eq(orderItems.photoId, photoId)))
-          : Promise.resolve(),
-      ]);
-    } catch {
-      // El contador es informativo y nunca debe impedir una descarga ya pagada.
-    }
+    after(async () => {
+      try {
+        await Promise.all([
+          db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId)),
+          storedItems.length
+            ? db.update(orderItems)
+                .set({ downloadCount: sql`${orderItems.downloadCount} + 1` })
+                .where(and(eq(orderItems.orderId, orderId), eq(orderItems.photoId, photoId)))
+            : Promise.resolve(),
+        ]);
+      } catch {
+        // El contador es informativo y nunca debe impedir una descarga ya pagada.
+      }
+    });
     const asciiName = safeDownloadName(photo.originalName);
     console.log(JSON.stringify({
       level: "info",

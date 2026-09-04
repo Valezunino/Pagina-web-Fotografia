@@ -16,6 +16,8 @@ type PurchaseState = {
   error?: string;
 };
 
+const MAX_AUTOMATIC_CHECKS = 30;
+
 export function OrderStatus({
   orderId,
   initialState,
@@ -33,6 +35,7 @@ export function OrderStatus({
   const [checks, setChecks] = useState(0);
   const clearedCartForOrder = useRef("");
   const requestInFlight = useRef(false);
+  const checkCount = useRef(0);
 
   const checkPayment = useCallback(async () => {
     if (!orderId || requestInFlight.current) return;
@@ -61,7 +64,8 @@ export function OrderStatus({
       window.clearTimeout(timeout);
       requestInFlight.current = false;
       setChecking(false);
-      setChecks((current) => current + 1);
+      checkCount.current += 1;
+      setChecks(checkCount.current);
     }
   }, [orderId, paymentId, verifiedAccess]);
 
@@ -72,9 +76,14 @@ export function OrderStatus({
 
     const run = async () => {
       await checkPayment();
-      if (!cancelled) timer = window.setTimeout(() => void run(), 5000);
+      if (!cancelled && checkCount.current < MAX_AUTOMATIC_CHECKS) {
+        const baseDelay = checkCount.current < 6 ? 5_000 : checkCount.current < 18 ? 10_000 : 20_000;
+        const visibilityDelay = document.visibilityState === "hidden" ? 30_000 : baseDelay;
+        const jitter = Math.floor(Math.random() * 1_500);
+        timer = window.setTimeout(() => void run(), visibilityDelay + jitter);
+      }
     };
-    void run();
+    timer = window.setTimeout(() => void run(), 1_000 + Math.floor(Math.random() * 1_000));
 
     return () => {
       cancelled = true;
