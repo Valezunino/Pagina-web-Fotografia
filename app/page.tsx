@@ -68,7 +68,7 @@ export default async function Home() {
               {publishedAlbums.map((album, index) => (
                 <Link key={album.id} href={`/colecciones/${album.slug}`} className="group overflow-hidden border border-white/10 bg-[#111] transition hover:border-[#c6a56d]/45">
                   <div className="protected-photo relative aspect-[16/10] overflow-hidden bg-[#161616]">
-                    <img src={album.coverImage} alt={`Portada de ${album.title}`} loading={index === 0 ? "eager" : "lazy"} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035] group-hover:brightness-75" />
+                    <img src={album.coverImage} alt={`Portada de ${album.title}`} loading={index === 0 ? "eager" : "lazy"} className="h-full w-full object-contain transition duration-700 group-hover:scale-[1.035] group-hover:brightness-75" />
                     <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                     <span className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white/80 backdrop-blur-md">
                       <FolderOpen className="size-3.5 text-[#c6a56d]" /> {album.photoCount} {album.photoCount === 1 ? "foto" : "fotos"}

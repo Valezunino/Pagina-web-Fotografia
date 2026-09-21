@@ -190,7 +190,7 @@ export function AdminDashboard({
       setAlbumMessage(data.error ?? "No pudimos crear la carpeta.");
       return;
     }
-    setAlbums((current) => [...current, data.album!]);
+    setAlbums((current) => [data.album!, ...current]);
     setSelectedAlbumId(data.album.id);
     setAlbumMessage("Carpeta creada. Ya podés subir las fotos del evento.");
     event.currentTarget.reset();

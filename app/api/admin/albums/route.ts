@@ -26,15 +26,21 @@ export async function POST(request: Request) {
     return Response.json({ error: "La descripción puede tener hasta 500 caracteres." }, { status: 400 });
   }
 
+  const db = getDb();
+  const [firstAlbum] = await db
+    .select({ sortOrder: albums.sortOrder })
+    .from(albums)
+    .orderBy(asc(albums.sortOrder))
+    .limit(1);
   const id = crypto.randomUUID();
   const slug = await uniqueAlbumSlug(title);
-  const [album] = await getDb().insert(albums).values({
+  const [album] = await db.insert(albums).values({
     id,
     slug,
     title,
     description,
     published: true,
-    sortOrder: Math.floor(Date.now() / 1000),
+    sortOrder: (firstAlbum?.sortOrder ?? 1) - 1,
   }).returning();
   return Response.json({ album }, { status: 201 });
 }

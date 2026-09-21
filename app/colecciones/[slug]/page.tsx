@@ -54,11 +54,11 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
       </section>
 
       <section className="px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
-        <div className="mx-auto grid max-w-[1440px] gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto max-w-[1440px] columns-1 gap-5 sm:columns-2 lg:columns-3">
           {photos.map((photo, index) => (
-            <article key={photo.id} className="group overflow-hidden border border-white/10 bg-[#111]">
-              <div className="protected-photo aspect-[4/3] overflow-hidden bg-black">
-                <img src={photo.image} alt={photo.title} loading={index < 3 ? "eager" : "lazy"} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.025] group-hover:brightness-90" />
+            <article key={photo.id} className="group mb-5 inline-block w-full break-inside-avoid overflow-hidden border border-white/10 bg-[#111] align-top">
+              <div className="protected-photo overflow-hidden bg-black">
+                <img src={photo.image} alt={photo.title} loading={index < 3 ? "eager" : "lazy"} className="h-auto w-full transition duration-700 group-hover:scale-[1.025] group-hover:brightness-90" />
               </div>
               <div className="flex items-end justify-between gap-4 p-5">
                 <div className="min-w-0">
