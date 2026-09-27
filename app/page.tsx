@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, FolderOpen, LockKeyhole } from "lucide-react";
+import { ArrowDown, ArrowUpRight, FolderOpen, Images, LockKeyhole } from "lucide-react";
 import { BrandHomeLink } from "@/components/brand-home-link";
 import { getPublishedAlbums } from "@/lib/album-data";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -17,6 +17,10 @@ export default async function Home() {
           <nav className="flex items-center gap-5 text-xs text-white/60 sm:gap-8" aria-label="Navegación principal">
             <a href="#eventos" className="hidden transition-colors hover:text-white sm:block">Eventos</a>
             <a href="#compra" className="hidden transition-colors hover:text-white sm:block">Cómo comprar</a>
+            <a href="/cuenta" className="flex items-center gap-2 transition-colors hover:text-white">
+              <Images className="size-3.5" />
+              Mis fotos
+            </a>
             <a href="/admin" className="flex items-center gap-2 transition-colors hover:text-white">
               <LockKeyhole className="size-3.5" />
               Fotógrafo

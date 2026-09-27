@@ -50,6 +50,15 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const [photo] = await db.select().from(photos).where(eq(photos.id, id)).limit(1);
   if (!photo) return Response.json({ error: "Foto no encontrada." }, { status: 404 });
 
+  const [itemReference, primaryReference] = await Promise.all([
+    db.select({ orderId: orderItems.orderId }).from(orderItems).where(eq(orderItems.photoId, id)).limit(1),
+    db.select({ orderId: orders.id }).from(orders).where(eq(orders.photoId, id)).limit(1),
+  ]);
+  if (itemReference.length || primaryReference.length) {
+    await db.update(photos).set({ published: false }).where(eq(photos.id, id));
+    return Response.json({ ok: true, archived: true });
+  }
+
   try {
     await db.delete(orderItems).where(eq(orderItems.photoId, id));
   } catch {

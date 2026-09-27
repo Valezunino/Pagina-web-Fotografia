@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { ArrowLeft, Images, LockKeyhole } from "lucide-react";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { BrandHomeLink } from "@/components/brand-home-link";
 import { getPublishedAlbum } from "@/lib/album-data";
@@ -33,7 +33,10 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
       <header className="border-b border-white/10 bg-[#0b0b0b]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <BrandHomeLink label="Volver al inicio" />
-          <Link href="/admin" className="flex items-center gap-2 text-xs text-white/50 transition-colors hover:text-white"><LockKeyhole className="size-3.5" /> Fotógrafo</Link>
+          <div className="flex items-center gap-5 text-xs text-white/50">
+            <Link href="/cuenta" className="flex items-center gap-2 transition-colors hover:text-white"><Images className="size-3.5" /> Mis fotos</Link>
+            <Link href="/admin" className="flex items-center gap-2 transition-colors hover:text-white"><LockKeyhole className="size-3.5" /> Fotógrafo</Link>
+          </div>
         </div>
       </header>
 

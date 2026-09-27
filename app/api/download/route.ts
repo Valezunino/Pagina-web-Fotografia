@@ -11,6 +11,7 @@ import { verifyOrderAccessToken } from "@/lib/order-access";
 import { getOrderItemsOrEmpty } from "@/lib/order-items";
 import { verifyOrderCookie } from "@/lib/order-auth";
 import { readStoredAsset } from "@/lib/stored-assets";
+import { getCustomerSession } from "@/lib/customer-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -40,12 +41,15 @@ export async function GET(request: Request) {
       status: orders.status,
       claimHash: orders.claimHash,
       photoId: orders.photoId,
+      email: orders.email,
     }).from(orders).where(eq(orders.id, orderId)).limit(1);
     if (!row) return new Response("No autorizado", { status: 403 });
     let status = row.status;
+    const customer = await getCustomerSession();
     let authorized =
       (await verifyOrderCookie(orderId, row.claimHash)) ||
-      (await verifyOrderAccessToken(orderId, accessToken));
+      (await verifyOrderAccessToken(orderId, accessToken)) ||
+      customer?.email === row.email;
 
     if (!authorized && paymentId) {
       try {

@@ -5,6 +5,7 @@ import { createOrderAccessToken } from "@/lib/order-access";
 import { setOrderCookie } from "@/lib/order-auth";
 import { requireRuntimeValue } from "@/lib/runtime";
 import { sha256 } from "@/lib/security";
+import { getCustomerSession } from "@/lib/customer-auth";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_CART_ITEMS = 100;
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
       .filter((id): id is string => typeof id === "string")
       .map((id) => id.trim())
       .filter(Boolean))];
-    const email = payload.email?.trim().toLowerCase() ?? "";
+    const customer = await getCustomerSession();
+    const email = customer?.email ?? payload.email?.trim().toLowerCase() ?? "";
     if (!photoIds.length || !EMAIL.test(email)) {
       return Response.json({ error: "Ingresá un email válido." }, { status: 400 });
     }

@@ -331,9 +331,10 @@ export function OrderStatus({
         )}
       </div>
       {approved ? (
-        <p className="mt-5 text-[11px] leading-5 text-white/35">
-          {itemCount > 1 ? "Descargá cada archivo usando los botones. " : ""}En iPhone, si no aparece la descarga, usá “Abrir la foto” y luego Compartir → Guardar imagen.
-        </p>
+        <div className="mt-5 space-y-3 text-[11px] leading-5 text-white/35">
+          <p>{itemCount > 1 ? "Descargá cada archivo usando los botones. " : ""}En iPhone, si no aparece la descarga, usá “Abrir la foto” y luego Compartir → Guardar imagen.</p>
+          <Link href="/cuenta" className="inline-flex text-[#c6a56d] underline decoration-[#c6a56d]/30 underline-offset-4 hover:text-[#d5bb90]">Crear una cuenta o ver todas mis fotos compradas</Link>
+        </div>
       ) : null}
     </div>
   );

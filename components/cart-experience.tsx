@@ -24,11 +24,11 @@ const currency = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 0,
 });
 
-export function CartExperience() {
+export function CartExperience({ initialEmail = "" }: { initialEmail?: string }) {
   const pathname = usePathname();
   const items = useCartItems();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const total = items.reduce((sum, item) => sum + item.price, 0);
@@ -126,6 +126,7 @@ export function CartExperience() {
                   placeholder="tu@email.com"
                   className="h-12 border-white/15 bg-white/5 placeholder:text-white/25 focus-visible:border-[#c6a56d] focus-visible:ring-[#c6a56d]/20"
                 />
+                {initialEmail ? <p className="text-[11px] text-emerald-200/60">Esta compra se guardará en “Mis fotos”.</p> : null}
               </div>
               {message ? <p className="rounded-lg border border-[#c6a56d]/25 bg-[#c6a56d]/8 p-3 text-xs leading-5 text-[#dbc49f]">{message}</p> : null}
               <Button type="submit" disabled={loading} className="h-12 w-full bg-[#c6a56d] font-semibold text-black hover:bg-[#d5bb90]">

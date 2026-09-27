@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CartExperience } from "@/components/cart-experience";
+import { getCustomerSession } from "@/lib/customer-auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,12 +12,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const customer = await getCustomerSession();
   return (
     <html lang="es">
       <body className="antialiased">
         {children}
-        <CartExperience />
+        <CartExperience initialEmail={customer?.email ?? ""} />
       </body>
     </html>
   );
