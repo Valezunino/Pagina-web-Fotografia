@@ -1,7 +1,7 @@
 "use client";
 
-import { SignInButton } from "@clerk/nextjs";
-import { ShieldCheck } from "lucide-react";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { AtSign, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AccountAccessForm() {
@@ -11,13 +11,21 @@ export function AccountAccessForm() {
         <ShieldCheck className="size-6" />
       </div>
       <h2 className="mt-6 font-serif text-3xl">Ingresá de forma segura</h2>
-      <p className="mt-3 text-sm leading-6 text-white/48">Usá la cuenta de Google con la que compraste. Verificamos el Gmail y tomamos tu nombre para mantener tus fotos asociadas a la persona correcta.</p>
+      <p className="mt-3 text-sm leading-6 text-white/48">Elegí cómo crear tu cuenta. En ambos casos verificamos el email y guardamos tu nombre para mantener tus fotos asociadas a la persona correcta.</p>
       <SignInButton mode="modal" forceRedirectUrl="/cuenta">
         <Button type="button" className="mt-7 h-12 w-full bg-white font-semibold text-black hover:bg-white/90">
           <GoogleMark /> Continuar con Google
         </Button>
       </SignInButton>
-      <p className="mt-5 text-center text-[11px] leading-5 text-white/38">Solo se aceptan cuentas @gmail.com verificadas. Tus compras aprobadas aparecerán automáticamente.</p>
+      <div className="my-4 flex items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-white/30">
+        <span className="h-px flex-1 bg-white/10" /> o <span className="h-px flex-1 bg-white/10" />
+      </div>
+      <SignUpButton mode="modal" forceRedirectUrl="/cuenta">
+        <Button type="button" variant="outline" className="h-12 w-full border-white/15 bg-white/[0.03] text-white hover:bg-white/8 hover:text-white">
+          <AtSign /> Registrarme con email
+        </Button>
+      </SignUpButton>
+      <p className="mt-5 text-center text-[11px] leading-5 text-white/38">El email se verifica antes de habilitar la cuenta. Tus compras aprobadas aparecerán automáticamente.</p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 export async function POST() {
   return Response.json(
-    { error: "El registro con contraseña fue reemplazado por el acceso seguro con Google." },
+    { error: "El registro se realiza desde Mi cuenta para poder verificar el email." },
     { status: 410 },
   );
 }

@@ -92,7 +92,7 @@ export type CustomerIdentity = {
   lastName: string;
   displayName: string;
   eligible: boolean;
-  accessIssue: "gmail_required" | "verified_email_required" | "name_required" | null;
+  accessIssue: "verified_email_required" | "name_required" | null;
 };
 
 export async function createCustomerSession(account: { id: string; email: string }) {
@@ -142,9 +142,8 @@ export const getCurrentCustomer = cache(async function getCurrentCustomer() {
   const lastName = user.lastName?.trim() ?? "";
   const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Cliente";
   const verified = primaryEmail?.verification?.status === "verified";
-  const isGmail = email.endsWith("@gmail.com");
 
-  if (!verified || !isGmail || !firstName) {
+  if (!verified || !firstName || !lastName) {
     return {
       id: user.id,
       email,
@@ -152,7 +151,7 @@ export const getCurrentCustomer = cache(async function getCurrentCustomer() {
       lastName,
       displayName,
       eligible: false,
-      accessIssue: !verified ? "verified_email_required" : !isGmail ? "gmail_required" : "name_required",
+      accessIssue: !verified ? "verified_email_required" : "name_required",
     } satisfies CustomerIdentity;
   }
 

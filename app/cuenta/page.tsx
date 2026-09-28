@@ -3,6 +3,7 @@ import { Images, ShoppingBag } from "lucide-react";
 import { AccountAccessForm } from "@/components/account-access-form";
 import { AccountDownloadButton } from "@/components/account-downloads";
 import { AccountLogoutButton } from "@/components/account-logout-button";
+import { AccountNameForm } from "@/components/account-name-form";
 import { BrandHomeLink } from "@/components/brand-home-link";
 import { getDb } from "@/db";
 import { orders, photos } from "@/db/schema";
@@ -24,16 +25,14 @@ export default async function AccountPage() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#c6a56d]">Tu espacio personal</p>
               <h1 className="mt-5 max-w-xl font-serif text-5xl leading-tight sm:text-6xl">Todas tus fotos, siempre disponibles.</h1>
-              <p className="mt-5 max-w-lg text-sm leading-7 text-white/48">Ingresá con el mismo Gmail que usás al pagar. Vas a encontrar juntas tus compras anteriores y las próximas, listas para volver a descargar.</p>
+              <p className="mt-5 max-w-lg text-sm leading-7 text-white/48">Ingresá con Google o registrate con tu email. Usá el mismo correo con el que pagás para encontrar juntas tus compras anteriores y las próximas.</p>
             </div>
             <div>
-              {customer?.accessIssue ? (
+              {customer?.accessIssue === "name_required" ? (
+                <AccountNameForm initialFirstName={customer.firstName} initialLastName={customer.lastName} />
+              ) : customer?.accessIssue === "verified_email_required" ? (
                 <div className="mb-4 border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100/80">
-                  {customer.accessIssue === "gmail_required"
-                    ? "La cuenta ingresada no es un Gmail. Cerrá sesión y continuá con una cuenta @gmail.com."
-                    : customer.accessIssue === "name_required"
-                      ? "Esta cuenta de Google no tiene un nombre disponible. Agregalo en tu perfil de Google y volvé a ingresar."
-                      : "Google no confirmó este email como verificado. Cerrá sesión e intentá con otra cuenta."}
+                  El email todavía no está verificado. Completá la verificación recibida por correo o ingresá con otra cuenta.
                   <div className="mt-3"><AccountLogoutButton /></div>
                 </div>
               ) : null}
