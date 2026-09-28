@@ -87,10 +87,18 @@ export default async function AccountPage() {
                 {purchase.items.map((item, index) => {
                   const query = new URLSearchParams({ order: purchase.id, photo: item.id });
                   const view = new URLSearchParams(query); view.set("view", "1");
+                  const preview = new URLSearchParams(query); preview.set("preview", "1");
                   return (
-                    <div key={`${purchase.id}-${item.id}`} className="grid gap-4 border border-white/10 bg-black/20 p-4">
-                      <div><p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-[#c6a56d]">Foto {index + 1}</p><h3 className="mt-2 truncate font-serif text-xl">{item.title}</h3></div>
+                    <div key={`${purchase.id}-${item.id}`} className="grid overflow-hidden border border-white/10 bg-black/20">
+                      <div className="grid aspect-[4/3] place-items-center overflow-hidden bg-black">
+                        {/* La URL es privada y necesita las cookies del navegador; por eso no pasa por el optimizador de imágenes. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/api/download?${preview}`} alt={`Vista previa de ${item.title}`} loading="lazy" className="h-full w-full object-contain" />
+                      </div>
+                      <div className="grid gap-4 p-4">
+                        <div><p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-[#c6a56d]">Foto {index + 1}</p><h3 className="mt-2 truncate font-serif text-xl">{item.title}</h3></div>
                       <AccountDownloadButton item={{ key: `${purchase.id}-${item.id}`, title: item.title, downloadUrl: `/api/download?${query}`, viewUrl: `/api/download?${view}` }} />
+                      </div>
                     </div>
                   );
                 })}

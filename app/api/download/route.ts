@@ -33,7 +33,8 @@ export async function GET(request: Request) {
   const accessToken = url.searchParams.get("access") ?? undefined;
   const paymentId = url.searchParams.get("paymentId") ?? undefined;
   const requestedPhotoId = url.searchParams.get("photo")?.trim() ?? "";
-  const openInline = url.searchParams.get("view") === "1";
+  const showPreview = url.searchParams.get("preview") === "1";
+  const openInline = showPreview || url.searchParams.get("view") === "1";
   if (!orderId) return new Response("Compra no encontrada", { status: 400 });
   try {
     const db = getDb();
@@ -90,15 +91,16 @@ export async function GET(request: Request) {
     if (!photoId || !allowedPhotoIds.includes(photoId)) return new Response("Foto no incluida en esta compra", { status: 403 });
 
     const [photo] = await db.select({
+      previewKey: photos.previewKey,
       originalKey: photos.originalKey,
       originalName: photos.originalName,
       contentType: photos.contentType,
     }).from(photos).where(eq(photos.id, photoId)).limit(1);
     if (!photo) return new Response("La fotografía ya no está disponible", { status: 404 });
 
-    const asset = await readStoredAsset(photo.originalKey);
+    const asset = await readStoredAsset(showPreview ? photo.previewKey : photo.originalKey);
     if (!asset || asset.statusCode === 304 || !asset.stream) return new Response("Archivo no encontrado", { status: 404 });
-    after(async () => {
+    if (!showPreview) after(async () => {
       try {
         await Promise.all([
           db.update(orders).set({ downloadCount: sql`${orders.downloadCount} + 1` }).where(eq(orders.id, orderId)),
@@ -115,20 +117,21 @@ export async function GET(request: Request) {
     const asciiName = safeDownloadName(photo.originalName);
     console.log(JSON.stringify({
       level: "info",
-      message: "paid_download_started",
+      message: showPreview ? "paid_preview_served" : "paid_download_started",
       route: "/api/download",
       requestId,
       orderIdSuffix: orderId.slice(-8),
       photoIdSuffix: photoId.slice(-8),
       size: asset.blob.size,
+      asset: showPreview ? "preview" : "original",
       disposition: openInline ? "inline" : "attachment",
       durationMs: Date.now() - startedAt,
     }));
     return new Response(asset.stream, { headers: {
-      "content-type": photo.contentType || asset.blob.contentType || "application/octet-stream",
+      "content-type": asset.blob.contentType || photo.contentType || "application/octet-stream",
       "content-length": String(asset.blob.size),
       "content-disposition": `${openInline ? "inline" : "attachment"}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(photo.originalName)}`,
-      "cache-control": "private, no-store",
+      "cache-control": showPreview ? "private, max-age=300" : "private, no-store",
       "x-content-type-options": "nosniff",
       "x-original-content-type": photo.contentType,
     }});
