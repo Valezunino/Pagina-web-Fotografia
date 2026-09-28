@@ -1,62 +1,34 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LoaderCircle, LockKeyhole, UserRoundPlus } from "lucide-react";
+import { SignInButton } from "@clerk/nextjs";
+import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export function AccountAccessForm() {
-  const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (loading) return;
-    setLoading(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/account/${mode}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(data.error ?? "No pudimos completar el acceso.");
-      router.refresh();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No pudimos completar el acceso.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="w-full max-w-md border border-white/10 bg-[#111] p-6 sm:p-8">
-      <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/25 p-1">
-        <button type="button" onClick={() => { setMode("login"); setMessage(""); }} className={`rounded-lg px-4 py-3 text-xs font-semibold transition ${mode === "login" ? "bg-[#c6a56d] text-black" : "text-white/55 hover:text-white"}`}>Ingresar</button>
-        <button type="button" onClick={() => { setMode("register"); setMessage(""); }} className={`rounded-lg px-4 py-3 text-xs font-semibold transition ${mode === "register" ? "bg-[#c6a56d] text-black" : "text-white/55 hover:text-white"}`}>Crear cuenta</button>
+      <div className="flex size-12 items-center justify-center rounded-full border border-[#c6a56d]/30 bg-[#c6a56d]/10 text-[#c6a56d]">
+        <ShieldCheck className="size-6" />
       </div>
-      <form onSubmit={submit} className="mt-7 space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="customer-email" className="text-xs text-white/72">Email usado en tus compras</Label>
-          <Input id="customer-email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tu@email.com" className="h-12 border-white/15 bg-white/5" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="customer-password" className="text-xs text-white/72">Contraseña</Label>
-          <Input id="customer-password" type="password" required minLength={8} maxLength={128} autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo 8 caracteres" className="h-12 border-white/15 bg-white/5" />
-        </div>
-        {message ? <p className="rounded-lg border border-red-300/20 bg-red-400/8 p-3 text-xs leading-5 text-red-200">{message}</p> : null}
-        <Button type="submit" disabled={loading} className="h-12 w-full bg-[#c6a56d] font-semibold text-black hover:bg-[#d5bb90]">
-          {loading ? <><LoaderCircle className="animate-spin" /> Procesando…</> : mode === "login" ? <><LockKeyhole /> Iniciar sesión</> : <><UserRoundPlus /> Crear mi cuenta</>}
+      <h2 className="mt-6 font-serif text-3xl">Ingresá de forma segura</h2>
+      <p className="mt-3 text-sm leading-6 text-white/48">Usá la cuenta de Google con la que compraste. Verificamos el Gmail y tomamos tu nombre para mantener tus fotos asociadas a la persona correcta.</p>
+      <SignInButton mode="modal" forceRedirectUrl="/cuenta">
+        <Button type="button" className="mt-7 h-12 w-full bg-white font-semibold text-black hover:bg-white/90">
+          <GoogleMark /> Continuar con Google
         </Button>
-      </form>
-      <p className="mt-5 text-center text-[11px] leading-5 text-white/38">Usá el mismo email con el que pagaste. Las compras anteriores aprobadas aparecerán automáticamente.</p>
+      </SignInButton>
+      <p className="mt-5 text-center text-[11px] leading-5 text-white/38">Solo se aceptan cuentas @gmail.com verificadas. Tus compras aprobadas aparecerán automáticamente.</p>
     </div>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4">
+      <path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.3 3-7.3Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.8 5.8 0 0 1-5.5-4H3.2v2.6A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.5 14a6 6 0 0 1 0-3.9V7.5H3.2a10 10 0 0 0 0 9.1L6.5 14Z" />
+      <path fill="#EA4335" d="M12 5.9c1.6 0 3 .6 4.1 1.6l3-3A10 10 0 0 0 3.2 7.5l3.3 2.6A5.8 5.8 0 0 1 12 5.9Z" />
+    </svg>
   );
 }

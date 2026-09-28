@@ -46,11 +46,15 @@ export const adminCredentials = pgTable("admin_credentials", {
 export const customerAccounts = pgTable("customer_accounts", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"),
+  clerkUserId: text("clerk_user_id"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("customer_accounts_email_unique").on(table.email),
+  uniqueIndex("customer_accounts_clerk_user_unique").on(table.clerkUserId),
 ]);
 
 export const orders = pgTable("orders", {

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       .from(customerAccounts)
       .where(eq(customerAccounts.email, email))
       .limit(1);
-    if (!account || !(await verifyCustomerPassword(password, account.passwordHash))) {
+    if (!account?.passwordHash || !(await verifyCustomerPassword(password, account.passwordHash))) {
       return Response.json({ error: "El email o la contraseña no son correctos." }, { status: 401 });
     }
     await createCustomerSession(account);

@@ -15,7 +15,7 @@ const date = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "Am
 
 export default async function AccountPage() {
   const customer = await getCurrentCustomer();
-  if (!customer) {
+  if (!customer || !customer.eligible) {
     return (
       <main className="min-h-screen bg-[#0b0b0b] px-5 py-8 text-[#f2eee7] sm:px-8">
         <div className="mx-auto flex max-w-5xl"><BrandHomeLink /></div>
@@ -24,9 +24,21 @@ export default async function AccountPage() {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#c6a56d]">Tu espacio personal</p>
               <h1 className="mt-5 max-w-xl font-serif text-5xl leading-tight sm:text-6xl">Todas tus fotos, siempre disponibles.</h1>
-              <p className="mt-5 max-w-lg text-sm leading-7 text-white/48">Creá una cuenta con el email usado al pagar. Vas a encontrar juntas tus compras anteriores y las próximas, listas para volver a descargar.</p>
+              <p className="mt-5 max-w-lg text-sm leading-7 text-white/48">Ingresá con el mismo Gmail que usás al pagar. Vas a encontrar juntas tus compras anteriores y las próximas, listas para volver a descargar.</p>
             </div>
-            <AccountAccessForm />
+            <div>
+              {customer?.accessIssue ? (
+                <div className="mb-4 border border-amber-300/20 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100/80">
+                  {customer.accessIssue === "gmail_required"
+                    ? "La cuenta ingresada no es un Gmail. Cerrá sesión y continuá con una cuenta @gmail.com."
+                    : customer.accessIssue === "name_required"
+                      ? "Esta cuenta de Google no tiene un nombre disponible. Agregalo en tu perfil de Google y volvé a ingresar."
+                      : "Google no confirmó este email como verificado. Cerrá sesión e intentá con otra cuenta."}
+                  <div className="mt-3"><AccountLogoutButton /></div>
+                </div>
+              ) : null}
+              {!customer ? <AccountAccessForm /> : null}
+            </div>
           </div>
         </section>
       </main>
@@ -56,7 +68,7 @@ export default async function AccountPage() {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#c6a56d]">Mi cuenta</p>
             <h1 className="mt-4 font-serif text-5xl sm:text-6xl">Mis fotos</h1>
-            <p className="mt-4 text-sm text-white/45">Compras aprobadas de {customer.email}</p>
+            <p className="mt-4 text-sm text-white/45">Hola, {customer.displayName}. Estas son las compras aprobadas de tu cuenta.</p>
           </div>
           <div className="flex gap-3 text-xs text-white/55">
             <span className="flex items-center gap-2 border border-white/10 bg-white/[0.025] px-4 py-3"><ShoppingBag className="size-4 text-[#c6a56d]" /> {purchases.length} compras</span>

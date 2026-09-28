@@ -1,4 +1,6 @@
+import { currentUser } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { customerAccounts } from "@/db/schema";
@@ -19,12 +21,20 @@ export function ensureCustomerAccountsTable() {
       CREATE TABLE IF NOT EXISTS customer_accounts (
         id text PRIMARY KEY NOT NULL,
         email text NOT NULL,
-        password_hash text NOT NULL,
+        password_hash text,
+        clerk_user_id text,
+        first_name text,
+        last_name text,
         created_at timestamp with time zone DEFAULT now() NOT NULL,
         updated_at timestamp with time zone DEFAULT now() NOT NULL
       )
     `);
+    await db.execute(sql`ALTER TABLE customer_accounts ALTER COLUMN password_hash DROP NOT NULL`);
+    await db.execute(sql`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS clerk_user_id text`);
+    await db.execute(sql`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS first_name text`);
+    await db.execute(sql`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS last_name text`);
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS customer_accounts_email_unique ON customer_accounts (email)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS customer_accounts_clerk_user_unique ON customer_accounts (clerk_user_id) WHERE clerk_user_id IS NOT NULL`);
   })().catch((error) => {
     customerTableReady = undefined;
     throw error;
@@ -75,6 +85,16 @@ export async function verifyCustomerPassword(password: string, stored: string) {
   return safeEqual(await derivePassword(password, salt, iterations), expected);
 }
 
+export type CustomerIdentity = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  eligible: boolean;
+  accessIssue: "gmail_required" | "verified_email_required" | "name_required" | null;
+};
+
 export async function createCustomerSession(account: { id: string; email: string }) {
   const expires = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
   const payload = `${account.id}|${normalizeCustomerEmail(account.email)}|${expires}`;
@@ -112,15 +132,58 @@ export async function getCustomerSession() {
   return { id, email };
 }
 
-export async function getCurrentCustomer() {
-  const session = await getCustomerSession();
-  if (!session) return null;
+export const getCurrentCustomer = cache(async function getCurrentCustomer() {
+  const user = await currentUser();
+  if (!user) return null;
+
+  const primaryEmail = user.primaryEmailAddress;
+  const email = normalizeCustomerEmail(primaryEmail?.emailAddress ?? "");
+  const firstName = user.firstName?.trim() ?? "";
+  const lastName = user.lastName?.trim() ?? "";
+  const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Cliente";
+  const verified = primaryEmail?.verification?.status === "verified";
+  const isGmail = email.endsWith("@gmail.com");
+
+  if (!verified || !isGmail || !firstName) {
+    return {
+      id: user.id,
+      email,
+      firstName,
+      lastName,
+      displayName,
+      eligible: false,
+      accessIssue: !verified ? "verified_email_required" : !isGmail ? "gmail_required" : "name_required",
+    } satisfies CustomerIdentity;
+  }
+
   await ensureCustomerAccountsTable();
+  await getDb().execute(sql`
+    INSERT INTO customer_accounts (id, email, password_hash, clerk_user_id, first_name, last_name, created_at, updated_at)
+    VALUES (${user.id}, ${email}, NULL, ${user.id}, ${firstName || null}, ${lastName || null}, now(), now())
+    ON CONFLICT (email) DO UPDATE SET
+      clerk_user_id = EXCLUDED.clerk_user_id,
+      first_name = EXCLUDED.first_name,
+      last_name = EXCLUDED.last_name,
+      updated_at = now()
+  `);
   const [account] = await getDb()
-    .select({ id: customerAccounts.id, email: customerAccounts.email })
+    .select({
+      id: customerAccounts.id,
+      email: customerAccounts.email,
+      firstName: customerAccounts.firstName,
+      lastName: customerAccounts.lastName,
+    })
     .from(customerAccounts)
-    .where(eq(customerAccounts.id, session.id))
+    .where(eq(customerAccounts.email, email))
     .limit(1);
-  if (!account || account.email !== session.email) return null;
-  return account;
-}
+  if (!account) return null;
+  return {
+    id: account.id,
+    email: account.email,
+    firstName: account.firstName ?? firstName,
+    lastName: account.lastName ?? lastName,
+    displayName,
+    eligible: true,
+    accessIssue: null,
+  } satisfies CustomerIdentity;
+});

@@ -9,7 +9,7 @@ import {
 import { createOrderAccessToken, verifyOrderAccessToken } from "@/lib/order-access";
 import { getOrderItemsOrEmpty } from "@/lib/order-items";
 import { verifyOrderCookie } from "@/lib/order-auth";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCurrentCustomer } from "@/lib/customer-auth";
 
 export async function GET(request: Request) {
   const startedAt = Date.now();
@@ -42,7 +42,10 @@ export async function GET(request: Request) {
     let authorization = "none";
     if (await verifyOrderCookie(orderId, row.claimHash)) authorization = "cookie";
     else if (await verifyOrderAccessToken(orderId, accessToken)) authorization = "signed_access";
-    else if ((await getCustomerSession())?.email === row.email) authorization = "customer_account";
+    else {
+      const customer = await getCurrentCustomer();
+      if (customer?.eligible && customer.email === row.email) authorization = "customer_account";
+    }
     let authorized = authorization !== "none";
 
     if (!authorized && paymentId) {
