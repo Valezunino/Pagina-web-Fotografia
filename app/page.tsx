@@ -1,10 +1,30 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowDown, ArrowUpRight, FolderOpen, Images, LockKeyhole } from "lucide-react";
 import { BrandHomeLink } from "@/components/brand-home-link";
 import { getPublishedAlbums } from "@/lib/album-data";
 import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
+
+const sponsors = [
+  {
+    name: "Erika Giménez Fotografía",
+    image: "/sponsors/erika-gimenez.jpeg",
+  },
+  {
+    name: "Boca Juniors Indumentaria Rojas",
+    image: "/sponsors/boca-juniors-indumentaria-rojas.jpeg",
+  },
+  {
+    name: "AP Lavadero",
+    image: "/sponsors/ap-lavadero.jpeg",
+  },
+  {
+    name: "Botines Rojas",
+    image: "/sponsors/botines-rojas.jpeg",
+  },
+];
 
 export default async function Home() {
   const [publishedAlbums, settings] = await Promise.all([getPublishedAlbums(), getSiteSettings()]);
@@ -17,6 +37,7 @@ export default async function Home() {
           <nav className="flex items-center gap-5 text-xs text-white/60 sm:gap-8" aria-label="Navegación principal">
             <a href="#eventos" className="hidden transition-colors hover:text-white sm:block">Eventos</a>
             <a href="#compra" className="hidden transition-colors hover:text-white sm:block">Cómo comprar</a>
+            <a href="#sponsors" className="hidden transition-colors hover:text-white lg:block">Sponsors</a>
             <a href="/cuenta" className="flex items-center gap-2 transition-colors hover:text-white">
               <Images className="size-3.5" />
               Mis fotos
@@ -121,6 +142,35 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section id="sponsors" className="border-b border-white/10 px-5 py-20 sm:px-8 lg:px-12 lg:py-24">
+        <div className="mx-auto max-w-[1440px]">
+          <div className="mb-10 max-w-2xl sm:mb-12">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-[#c6a56d]">Nos acompañan</p>
+            <h2 className="mt-4 font-serif text-4xl tracking-tight sm:text-5xl">Sponsors</h2>
+            <p className="mt-4 text-sm leading-6 text-white/48">Marcas y emprendimientos que apoyan el trabajo de Daniel Justiniano Fotografía.</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {sponsors.map((sponsor) => (
+              <article key={sponsor.name} className="group overflow-hidden border border-white/10 bg-[#111] transition duration-300 hover:-translate-y-1 hover:border-[#c6a56d]/55">
+                <div className="relative aspect-square overflow-hidden bg-[#f4f2ed] p-3 sm:p-4">
+                  <Image
+                    src={sponsor.image}
+                    alt={`Logo de ${sponsor.name}`}
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-contain p-3 transition duration-500 group-hover:scale-[1.025] sm:p-4"
+                  />
+                </div>
+                <div className="border-t border-white/10 px-4 py-4 text-center">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">{sponsor.name}</h3>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
