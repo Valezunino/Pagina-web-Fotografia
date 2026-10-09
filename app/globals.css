@@ -2,6 +2,41 @@
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 
+@keyframes sponsor-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.sponsor-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.sponsor-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: sponsor-marquee 24s linear infinite;
+  will-change: transform;
+}
+
+.sponsor-marquee:active .sponsor-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-marquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .sponsor-marquee-track {
+    animation: none;
+  }
+}
+
 @utility scrollbar-thin {
   scrollbar-width: thin;
 }
