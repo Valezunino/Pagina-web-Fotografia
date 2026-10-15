@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowDown, ArrowUpRight, FolderOpen, Images, LockKeyhole } from "lucide-react";
+import { ArrowDown, ArrowUpRight, FolderOpen, Images, LockKeyhole, MessageCircle } from "lucide-react";
 import { BrandHomeLink } from "@/components/brand-home-link";
 import { getPublishedAlbums } from "@/lib/album-data";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -112,6 +112,26 @@ export default async function Home() {
                 <h3 className="border-t border-white/10 px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">{sponsor.name}</h3>
               </article>
             ))}
+          </div>
+
+          <div className="mt-8 overflow-hidden border border-[#c6a56d]/30 bg-[#c6a56d]/[0.06] px-5 py-6 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-7">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#c6a56d]">Espacio para tu marca</p>
+              <h3 className="mt-2 font-serif text-2xl tracking-tight sm:text-3xl">Promocioná tu logo acá</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">
+                ¿Querés que tu marca aparezca entre nuestros sponsors? Escribile a Daniel para conocer las opciones disponibles.
+              </p>
+            </div>
+            <a
+              href="https://wa.me/5492474465592?text=Hola%20Daniel%2C%20estoy%20interesado%2Fa%20en%20promocionar%20el%20logo%20de%20mi%20negocio%20en%20tu%20p%C3%A1gina%20web.%20Quisiera%20recibir%20m%C3%A1s%20informaci%C3%B3n%20sobre%20precios%20y%20condiciones."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex shrink-0 items-center justify-center gap-2 border border-[#c6a56d] bg-[#c6a56d] px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-black transition hover:bg-transparent hover:text-[#c6a56d] sm:mt-0"
+              aria-label="Consultar por WhatsApp para promocionar un logo"
+            >
+              <MessageCircle className="size-4" />
+              Consultar por WhatsApp
+            </a>
           </div>
         </div>
       </section>
