@@ -24,6 +24,10 @@ const sponsors = [
     name: "Botines Rojas",
     image: "/sponsors/botines-rojas.jpeg",
   },
+  {
+    name: "mates.criollo6",
+    image: "/sponsors/mates-criollo6.webp",
+  },
 ];
 
 export default async function Home() {
@@ -103,7 +107,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="hidden gap-3 md:grid md:grid-cols-4">
+          <div className="hidden gap-3 md:grid md:grid-cols-3 xl:grid-cols-5">
             {sponsors.map((sponsor) => (
               <article key={sponsor.name} className="group overflow-hidden border border-white/10 bg-[#111] transition duration-300 hover:-translate-y-1 hover:border-[#c6a56d]/55">
                 <div className="relative h-44 bg-[#f4f2ed] lg:h-48">
