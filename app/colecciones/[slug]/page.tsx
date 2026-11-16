@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const result = await getPublishedAlbum(slug);
   return result
-    ? { title: `${result.album.title} | Daniel Justiniano`, description: result.album.description || `${result.album.photoCount} fotografías del evento.` }
-    : { title: "Colección | Daniel Justiniano" };
+    ? { title: `${result.album.title} | Galería Fotográfica`, description: result.album.description || `${result.album.photoCount} fotografías del evento.` }
+    : { title: "Colección | Galería Fotográfica" };
 }
 
 export default async function CollectionPage({ params }: { params: Promise<{ slug: string }> }) {

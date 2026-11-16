@@ -5,8 +5,8 @@ import { getCurrentCustomer } from "@/lib/customer-auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Daniel Justiniano | Fotografía",
-  description: "Galería de Daniel Justiniano. Fotografías profesionales en alta calidad, compra segura y descarga sin marca de agua.",
+  title: "Galería Fotográfica | Fotos de eventos",
+  description: "Galería de fotografía profesional. Elegí fotos de tus eventos, comprá de forma segura y descargá tus imágenes originales en alta calidad.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

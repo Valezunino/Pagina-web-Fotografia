@@ -9,10 +9,6 @@ export const dynamic = "force-dynamic";
 
 const sponsors = [
   {
-    name: "Erika Giménez Fotografía",
-    image: "/sponsors/erika-gimenez.jpeg",
-  },
-  {
     name: "Boca Juniors Indumentaria Rojas",
     image: "/sponsors/boca-juniors-indumentaria-rojas.jpeg",
   },
@@ -62,12 +58,10 @@ export default async function Home() {
               <span className="h-px w-10 bg-[#c6a56d]" />
               {settings.heroKicker}
             </p>
-            <h1 className="sr-only">Daniel Justiniano Fotografía</h1>
-            <img
-              src="/brand/daniel-fotografia-color.png"
-              alt="Daniel Fotografía"
-              className="h-auto w-full max-w-[720px] object-contain object-left"
-            />
+            <h1 className="max-w-[800px] font-serif text-[clamp(3.25rem,9vw,7.5rem)] leading-[0.95] tracking-[-0.055em] text-[#f2eee7]">
+              Galería <span className="block italic text-[#c6a56d]">Fotográfica</span>
+            </h1>
+            <div className="mt-8 h-px w-full max-w-sm bg-gradient-to-r from-[#c6a56d]/70 to-transparent" />
           </div>
           <div className="max-w-md border-l border-white/15 pl-6 lg:mb-3 lg:justify-self-end">
             <p className="text-base leading-7 text-white/62">
@@ -87,10 +81,10 @@ export default async function Home() {
               <p className="text-[9px] font-semibold uppercase tracking-[0.34em] text-[#c6a56d]">Nos acompañan</p>
               <h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">Sponsors</h2>
             </div>
-            <p className="max-w-md text-xs leading-5 text-white/42 sm:text-right">Marcas y emprendimientos que apoyan a Daniel Justiniano Fotografía.</p>
+            <p className="max-w-md text-xs leading-5 text-white/42 sm:text-right">Marcas y emprendimientos que acompañan nuestra galería fotográfica.</p>
           </div>
 
-          <div className="sponsor-marquee md:hidden" aria-label="Sponsors de Daniel Justiniano Fotografía">
+          <div className="sponsor-marquee md:hidden" aria-label="Sponsors de la galería fotográfica">
             <div className="sponsor-marquee-track">
               {[0, 1].map((group) => (
                 <div key={group} className="flex gap-3 pr-3" aria-hidden={group === 1}>
@@ -107,7 +101,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="hidden gap-3 md:grid md:grid-cols-3 xl:grid-cols-5">
+          <div className="hidden gap-3 md:grid md:grid-cols-4">
             {sponsors.map((sponsor) => (
               <article key={sponsor.name} className="group overflow-hidden border border-white/10 bg-[#111] transition duration-300 hover:-translate-y-1 hover:border-[#c6a56d]/55">
                 <div className="relative h-44 bg-[#f4f2ed] lg:h-48">
@@ -123,11 +117,11 @@ export default async function Home() {
               <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#c6a56d]">Espacio para tu marca</p>
               <h3 className="mt-2 font-serif text-2xl tracking-tight sm:text-3xl">Promocioná tu logo acá</h3>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">
-                ¿Querés que tu marca aparezca entre nuestros sponsors? Escribile a Daniel para conocer las opciones disponibles.
+                ¿Querés que tu marca aparezca entre nuestros sponsors? Escribinos para conocer las opciones disponibles.
               </p>
             </div>
             <a
-              href="https://wa.me/5492474465592?text=Hola%20Daniel%2C%20estoy%20interesado%2Fa%20en%20promocionar%20el%20logo%20de%20mi%20negocio%20en%20tu%20p%C3%A1gina%20web.%20Quisiera%20recibir%20m%C3%A1s%20informaci%C3%B3n%20sobre%20precios%20y%20condiciones."
+              href="https://wa.me/5492474465592?text=Hola%2C%20estoy%20interesado%2Fa%20en%20promocionar%20el%20logo%20de%20mi%20negocio%20en%20tu%20p%C3%A1gina%20web.%20Quisiera%20recibir%20m%C3%A1s%20informaci%C3%B3n%20sobre%20precios%20y%20condiciones."
               target="_blank"
               rel="noopener noreferrer"
               className="mt-5 inline-flex shrink-0 items-center justify-center gap-2 border border-[#c6a56d] bg-[#c6a56d] px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-black transition hover:bg-transparent hover:text-[#c6a56d] sm:mt-0"
@@ -180,7 +174,7 @@ export default async function Home() {
               <div>
                 <FolderOpen className="mx-auto size-8 text-[#c6a56d]" />
                 <p className="mt-5 font-serif text-3xl">Próximamente nuevos eventos</p>
-                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/42">Daniel está preparando las próximas colecciones. Las carpetas aparecerán acá cuando tengan fotografías publicadas.</p>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/42">Estamos preparando las próximas colecciones. Las carpetas aparecerán acá cuando tengan fotografías publicadas.</p>
               </div>
             </div>
           )}
@@ -212,7 +206,7 @@ export default async function Home() {
       <footer className="border-t border-white/10 px-5 py-10 text-xs text-white/40 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
-            <span>© {new Date().getFullYear()} Daniel Justiniano Fotografía</span>
+            <span>© {new Date().getFullYear()} Galería Fotográfica</span>
             <span className="hidden text-white/15 sm:inline" aria-hidden="true">•</span>
             <span>{settings.footerText}</span>
           </div>

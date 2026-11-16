@@ -247,12 +247,8 @@ export function AdminDashboard({
         throw new Error("Cada archivo original puede pesar hasta 25 MB.");
       }
 
-      let logo = sourceForm.get("logo");
-      if (!(logo instanceof File) || !logo.size) {
-        const response = await fetch("/brand/daniel-fotografia-watermark.png");
-        const blob = await response.blob();
-        logo = new File([blob], "daniel-fotografia-watermark.png", { type: "image/png" });
-      }
+      const logoField = sourceForm.get("logo");
+      const logo = logoField instanceof File && logoField.size > 0 ? logoField : null;
 
       const titleBase = String(sourceForm.get("title") || "").trim();
       const category = String(sourceForm.get("category") || "Fotografía").trim();
@@ -319,11 +315,6 @@ export function AdminDashboard({
     setWatermarking(true);
     setWatermarkMessage("");
     try {
-      const logoResponse = await fetch("/brand/daniel-fotografia-watermark.png");
-      if (!logoResponse.ok) throw new Error("No pudimos cargar el logo oficial.");
-      const logoBlob = await logoResponse.blob();
-      const logo = new File([logoBlob], "daniel-fotografia-watermark.png", { type: "image/png" });
-
       let nextPhotoIndex = 0;
       let completedPhotos = 0;
       let firstError: Error | null = null;
@@ -344,7 +335,7 @@ export function AdminDashboard({
             const original = new File([originalBlob], `${photo.title}.jpg`, {
               type: originalBlob.type || "image/jpeg",
             });
-            const preview = await makePreview(original, logo, settings.watermarkText);
+            const preview = await makePreview(original, null, settings.watermarkText);
             const replacementId = crypto.randomUUID();
             const previewBlob = await upload(`previews/${photo.id}/${replacementId}.jpg`, preview, {
               access: "private",
@@ -488,7 +479,7 @@ export function AdminDashboard({
       <div className="flex flex-col justify-between gap-6 border-b border-white/10 pb-8 sm:flex-row sm:items-end">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#c6a56d]">Autogestión</p>
-          <h1 className="mt-3 font-serif text-4xl sm:text-5xl">Panel de Daniel</h1>
+          <h1 className="mt-3 font-serif text-4xl sm:text-5xl">Panel de gestión</h1>
           <p className="mt-3 text-sm text-white/45">Administrá fotos, contenido y seguridad desde un solo lugar.</p>
         </div>
         <Button onClick={logout} variant="ghost" className="self-start text-white/50 hover:bg-white/5 hover:text-white sm:self-auto">
@@ -646,7 +637,7 @@ export function AdminDashboard({
                     <Input id="price" name="price" type="number" min="1" step="1" required placeholder="8500" className="h-11 border-white/15 bg-white/5" />
                   </div>
                 </div>
-                <p className="rounded-md border border-[#c6a56d]/20 bg-[#c6a56d]/5 p-3 text-[11px] leading-5 text-[#d5bb90]/80">La marca de agua oficial de Daniel Justiniano se aplica automáticamente a todas las vistas previas.</p>
+                <p className="rounded-md border border-[#c6a56d]/20 bg-[#c6a56d]/5 p-3 text-[11px] leading-5 text-[#d5bb90]/80">Una marca de agua de texto protege automáticamente las nuevas vistas previas. Las ya publicadas se pueden actualizar desde el panel.</p>
                 {uploadMessage ? <p className="flex items-start gap-2 text-xs leading-5 text-[#d5bb90]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {uploadMessage}</p> : null}
                 <Button type="submit" disabled={uploading} className="h-12 w-full bg-[#c6a56d] text-black hover:bg-[#d5bb90]">
                   {uploading ? <><LoaderCircle className="animate-spin" /> Publicando imágenes</> : <><Upload /> Publicar selección</>}
@@ -696,10 +687,10 @@ export function AdminDashboard({
           <form onSubmit={saveSettings} className="max-w-3xl space-y-6 border border-white/10 bg-[#111] p-6 sm:p-8">
             <div>
               <h2 className="font-serif text-3xl">Textos de la página</h2>
-              <p className="mt-2 text-sm text-white/45">Daniel puede cambiar estos textos sin tocar el diseño ni el código.</p>
+              <p className="mt-2 text-sm text-white/45">Podés cambiar estos textos sin tocar el diseño ni el código.</p>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
-              <SettingField name="heroKicker" label="Texto sobre el logo" value={settings.heroKicker} />
+              <SettingField name="heroKicker" label="Texto sobre el título" value={settings.heroKicker} />
               <SettingField name="galleryEyebrow" label="Texto sobre los eventos" value={settings.galleryEyebrow} />
               <SettingField name="galleryTitle" label="Título de los eventos" value={settings.galleryTitle} />
               <SettingField name="watermarkText" label="Texto alternativo de marca de agua" value={settings.watermarkText} />
