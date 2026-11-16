@@ -58,10 +58,12 @@ export default async function Home() {
               <span className="h-px w-10 bg-[#c6a56d]" />
               {settings.heroKicker}
             </p>
-            <h1 className="max-w-[800px] font-serif text-[clamp(3.25rem,9vw,7.5rem)] leading-[0.95] tracking-[-0.055em] text-[#f2eee7]">
-              Galería <span className="block italic text-[#c6a56d]">Fotográfica</span>
-            </h1>
-            <div className="mt-8 h-px w-full max-w-sm bg-gradient-to-r from-[#c6a56d]/70 to-transparent" />
+            <h1 className="sr-only">Galería Fotográfica</h1>
+            <img
+              src="/brand/logo-fotografia.png"
+              alt="Logotipo de Fotografía"
+              className="h-auto w-full max-w-[720px] object-contain object-left"
+            />
           </div>
           <div className="max-w-md border-l border-white/15 pl-6 lg:mb-3 lg:justify-self-end">
             <p className="text-base leading-7 text-white/62">
