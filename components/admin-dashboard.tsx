@@ -57,7 +57,27 @@ type AdminAlbum = {
   sortOrder: number;
 };
 
-async function makePreview(original: File, logo: File | null, watermarkText: string) {
+const DEFAULT_WATERMARK_IMAGE = "/brand/marca-de-agua.png";
+
+async function loadWatermarkLogo(customLogo: File | null): Promise<File> {
+  if (customLogo) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(customLogo.type)) {
+      throw new Error("Elegí una imagen PNG, JPG o WebP para la marca de agua.");
+    }
+    if (customLogo.size > 5 * 1024 * 1024) {
+      throw new Error("La marca de agua no puede superar los 5 MB.");
+    }
+    return customLogo;
+  }
+
+  const response = await fetch(DEFAULT_WATERMARK_IMAGE);
+  if (!response.ok) {
+    throw new Error("No se pudo cargar el logo de Fotografía Deportiva. No se modificó ninguna foto.");
+  }
+  return new File([await response.blob()], "Marca de Agua.png", { type: "image/png" });
+}
+
+async function makePreview(original: File, logo: File) {
   const source = await createImageBitmap(original);
   const maximum = 1600;
   const ratio = Math.min(1, maximum / Math.max(source.width, source.height));
@@ -74,33 +94,21 @@ async function makePreview(original: File, logo: File | null, watermarkText: str
   context.translate(canvas.width / 2, canvas.height / 2);
   context.rotate(-Math.PI / 24);
 
-  if (logo) {
-    const logoBitmap = await createImageBitmap(logo);
-    const logoRatio = logoBitmap.height / logoBitmap.width;
-    const targetWidth = Math.min(
-      canvas.width * 0.8,
-      (canvas.height * 0.8) / logoRatio,
-    );
-    const targetHeight = targetWidth * (logoBitmap.height / logoBitmap.width);
-    context.drawImage(
-      logoBitmap,
-      -targetWidth / 2,
-      -targetHeight / 2,
-      targetWidth,
-      targetHeight,
-    );
-    logoBitmap.close();
-  } else {
-    const size = Math.max(18, Math.round(canvas.width / 24));
-    context.font = `700 ${size}px Arial`;
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillStyle = "white";
-    context.strokeStyle = "rgb(0 0 0 / 0.7)";
-    context.lineWidth = Math.max(2, size / 12);
-    context.strokeText(watermarkText.toUpperCase(), 0, 0);
-    context.fillText(watermarkText.toUpperCase(), 0, 0);
-  }
+  const logoBitmap = await createImageBitmap(logo);
+  const logoRatio = logoBitmap.height / logoBitmap.width;
+  const targetWidth = Math.min(
+    canvas.width * 0.8,
+    (canvas.height * 0.8) / logoRatio,
+  );
+  const targetHeight = targetWidth * logoRatio;
+  context.drawImage(
+    logoBitmap,
+    -targetWidth / 2,
+    -targetHeight / 2,
+    targetWidth,
+    targetHeight,
+  );
+  logoBitmap.close();
   context.restore();
   source.close();
 
@@ -158,6 +166,7 @@ export function AdminDashboard({
   const [uploadMessage, setUploadMessage] = useState("");
   const [watermarking, setWatermarking] = useState(false);
   const [watermarkMessage, setWatermarkMessage] = useState("");
+  const [watermarkLogo, setWatermarkLogo] = useState<File | null>(null);
   const [settingsMessage, setSettingsMessage] = useState("");
   const [adminEmail, setAdminEmail] = useState(initialAdminEmail);
   const [emailMessage, setEmailMessage] = useState("");
@@ -247,8 +256,7 @@ export function AdminDashboard({
         throw new Error("Cada archivo original puede pesar hasta 25 MB.");
       }
 
-      const logoField = sourceForm.get("logo");
-      const logo = logoField instanceof File && logoField.size > 0 ? logoField : null;
+      const logo = await loadWatermarkLogo(watermarkLogo);
 
       const titleBase = String(sourceForm.get("title") || "").trim();
       const category = String(sourceForm.get("category") || "Fotografía").trim();
@@ -257,7 +265,7 @@ export function AdminDashboard({
       for (let index = 0; index < originals.length; index += 1) {
         const original = originals[index];
         setUploadMessage(`Preparando y publicando ${index + 1} de ${originals.length}…`);
-        const preview = await makePreview(original, logo, settings.watermarkText);
+        const preview = await makePreview(original, logo);
         const derivedTitle = titleBase
           ? originals.length > 1
             ? `${titleBase} ${index + 1}`
@@ -315,6 +323,7 @@ export function AdminDashboard({
     setWatermarking(true);
     setWatermarkMessage("");
     try {
+      const logo = await loadWatermarkLogo(watermarkLogo);
       let nextPhotoIndex = 0;
       let completedPhotos = 0;
       let firstError: Error | null = null;
@@ -335,7 +344,7 @@ export function AdminDashboard({
             const original = new File([originalBlob], `${photo.title}.jpg`, {
               type: originalBlob.type || "image/jpeg",
             });
-            const preview = await makePreview(original, null, settings.watermarkText);
+            const preview = await makePreview(original, logo);
             const replacementId = crypto.randomUUID();
             const previewBlob = await upload(`previews/${photo.id}/${replacementId}.jpg`, preview, {
               access: "private",
@@ -503,6 +512,28 @@ export function AdminDashboard({
                 <p className="mt-2 text-sm leading-6 text-white/55">
                   Elegí una carpeta y aplicá una sola marca central, amplia y profesional. Las fotos originales y las compras no se modifican.
                 </p>
+                <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <img src={DEFAULT_WATERMARK_IMAGE} alt="Logo Fotografía Deportiva para marca de agua" className="h-24 w-32 shrink-0 object-contain" />
+                  <div className="w-full max-w-sm space-y-2">
+                    <Label htmlFor="watermarkLogo" className="text-xs text-white/75">Logo de marca de agua (PNG, JPG o WebP)</Label>
+                    <Input
+                      id="watermarkLogo"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      disabled={watermarking || uploading}
+                      onChange={(event) => {
+                        setWatermarkLogo(event.target.files?.[0] ?? null);
+                        setWatermarkMessage("");
+                      }}
+                      className="h-12 border-white/20 bg-white/5 py-2"
+                    />
+                    <p className="text-xs leading-5 text-white/45">
+                      {watermarkLogo
+                        ? `Usaremos: ${watermarkLogo.name}`
+                        : "Si no elegís otro, usaremos el logo de Fotografía Deportiva que aparece acá."}
+                    </p>
+                  </div>
+                </div>
                 {watermarkMessage ? <p className="mt-3 flex items-start gap-2 text-sm text-[#e2c897]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {watermarkMessage}</p> : null}
               </div>
               <div className="grid w-full gap-3 sm:grid-cols-[minmax(220px,1fr)_auto] lg:w-auto">
@@ -532,7 +563,7 @@ export function AdminDashboard({
                       <AlertDialogHeader>
                         <AlertDialogTitle>¿Actualizar {selectedPhotos.length} {selectedPhotos.length === 1 ? "foto" : "fotos"}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Se regenerarán las vistas protegidas de esta carpeta con una marca central, sin repeticiones ni superposiciones. Las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
+                          Se regenerarán las vistas protegidas de esta carpeta usando {watermarkLogo ? `el logo ${watermarkLogo.name}` : "el logo de Fotografía Deportiva"}. Solo se reemplazarán las vistas previas: las fotos originales y las compras no cambiarán. El proceso puede tardar unos minutos.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -637,7 +668,7 @@ export function AdminDashboard({
                     <Input id="price" name="price" type="number" min="1" step="1" required placeholder="8500" className="h-11 border-white/15 bg-white/5" />
                   </div>
                 </div>
-                <p className="rounded-md border border-[#c6a56d]/20 bg-[#c6a56d]/5 p-3 text-[11px] leading-5 text-[#d5bb90]/80">Una marca de agua de texto protege automáticamente las nuevas vistas previas. Las ya publicadas se pueden actualizar desde el panel.</p>
+                <p className="rounded-md border border-[#c6a56d]/20 bg-[#c6a56d]/5 p-3 text-[11px] leading-5 text-[#d5bb90]/80">Las nuevas fotos se publican con el logo de Fotografía Deportiva como marca de agua. Podés elegir otro PNG en la sección superior antes de subirlas o actualizar una carpeta.</p>
                 {uploadMessage ? <p className="flex items-start gap-2 text-xs leading-5 text-[#d5bb90]"><CheckCircle2 className="mt-0.5 size-4 shrink-0" /> {uploadMessage}</p> : null}
                 <Button type="submit" disabled={uploading} className="h-12 w-full bg-[#c6a56d] text-black hover:bg-[#d5bb90]">
                   {uploading ? <><LoaderCircle className="animate-spin" /> Publicando imágenes</> : <><Upload /> Publicar selección</>}
@@ -693,7 +724,7 @@ export function AdminDashboard({
               <SettingField name="heroKicker" label="Texto sobre el título" value={settings.heroKicker} />
               <SettingField name="galleryEyebrow" label="Texto sobre los eventos" value={settings.galleryEyebrow} />
               <SettingField name="galleryTitle" label="Título de los eventos" value={settings.galleryTitle} />
-              <SettingField name="watermarkText" label="Texto alternativo de marca de agua" value={settings.watermarkText} />
+              <SettingField name="watermarkText" label="Texto alternativo (no se usa al aplicar un logo)" value={settings.watermarkText} />
             </div>
             <SettingField name="heroDescription" label="Descripción principal" value={settings.heroDescription} />
             <SettingField name="footerText" label="Texto del pie de página" value={settings.footerText} />
